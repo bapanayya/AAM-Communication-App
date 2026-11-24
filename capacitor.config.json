@@ -1,0 +1,12 @@
+{
+  "appId": "in.aum.messaging",
+  "appName": "AUM",
+  "webDir": "client/dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

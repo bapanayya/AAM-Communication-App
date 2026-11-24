@@ -1,0 +1,31 @@
+{
+  "name": "aum-messaging-app",
+  "version": "1.0.0",
+  "description": "AUM: Sovereign Privacy-First Messaging & Social Media (Web, Android & PWA)",
+  "main": "client/dist/index.html",
+  "scripts": {
+    "build:web": "cd client && npm run build",
+    "sync:android": "npx cap sync android",
+    "build:all": "npm run build:web && npm run sync:android",
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev"
+  },
+  "keywords": [
+    "aum",
+    "messaging",
+    "social-media",
+    "privacy",
+    "e2ee",
+    "webrtc",
+    "make-in-india",
+    "android",
+    "google-play-store"
+  ],
+  "author": "The Competitive Edge / Bapanayya",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  }
+}
