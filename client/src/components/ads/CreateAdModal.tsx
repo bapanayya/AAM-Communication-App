@@ -9,9 +9,9 @@ interface CreateAdModalProps {
 
 const PRESET_MEDIA = [
   {
-    label: 'Artisan Textiles (Video)',
-    type: 'video' as const,
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    label: 'Artisan Textiles (Photo)',
+    type: 'image' as const,
+    url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',
     headline: 'Handcrafted Heritage Silk Weaves & Festive Collection ✨',
     price: '₹4,999',
     caption: 'Exclusive pure mulberry silk handwoven by master artisans. Direct ethical craftsmanship with free pan-India express shipping.',
@@ -27,9 +27,9 @@ const PRESET_MEDIA = [
     tags: 'Travel, Adventure, Himalayas',
   },
   {
-    label: 'Tech Consulting (Video)',
-    type: 'video' as const,
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    label: 'Tech Consulting (Photo)',
+    type: 'image' as const,
+    url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
     headline: 'Sovereign P2P Architecture & WebRTC Engineering 🇮🇳',
     price: 'Free Consultation',
     caption: 'Zero-trust, client-bound encryption and local sovereign architecture advisory for developers.',
