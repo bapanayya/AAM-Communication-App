@@ -198,3 +198,24 @@ export interface UserBackup {
   deviceInfo: string;
   createdAt: string;
 }
+
+export interface Advertisement {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userPhone?: string;
+  mediaType: 'video' | 'image';
+  mediaUrl: string;
+  headline: string;
+  caption: string;
+  ctaText?: string;
+  ctaLink?: string;
+  price?: string;
+  likes: string[];
+  sharesCount: number;
+  tags?: string[];
+  createdAt: string;
+  expiresAt?: string;
+}
+

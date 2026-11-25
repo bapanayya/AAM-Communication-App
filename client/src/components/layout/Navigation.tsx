@@ -1,10 +1,10 @@
 import React from 'react';
-import { MessageSquare, Phone, Film, CircleDashed, Clock, Users, HardDrive, Settings } from 'lucide-react';
+import { MessageSquare, Phone, Film, Megaphone, CircleDashed, Clock, Users, HardDrive, Settings } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useCall } from '../../context/CallContext';
 import { useSocial } from '../../context/SocialContext';
 
-export type NavTab = 'chats' | 'calls' | 'feed' | 'status' | 'transfers' | 'contacts' | 'storage' | 'settings';
+export type NavTab = 'chats' | 'calls' | 'feed' | 'ads' | 'status' | 'transfers' | 'contacts' | 'storage' | 'settings';
 
 interface NavigationProps {
   currentTab: NavTab;
@@ -25,6 +25,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, setCurrentTa
     { id: 'chats', label: 'Chats', icon: MessageSquare, badge: totalUnread },
     { id: 'calls', label: 'Calls', icon: Phone, badge: missedCalls },
     { id: 'feed', label: 'Daily Feed', icon: Film },
+    { id: 'ads', label: 'Ads Space', icon: Megaphone },
     { id: 'status', label: 'Status', icon: CircleDashed },
     { id: 'transfers', label: 'Transfers', icon: Clock, badge: pendingCount },
     { id: 'contacts', label: 'Contacts', icon: Users, badge: incomingReqCount },

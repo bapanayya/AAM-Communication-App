@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { DailyFeedItem, StatusGroup, FriendRequest, UserBackup } from '../types';
+import { DailyFeedItem, StatusGroup, FriendRequest, UserBackup, Advertisement } from '../types';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 
@@ -10,6 +10,7 @@ interface SocialContextType {
   statusGroups: StatusGroup[];
   storageSummary: any;
   backups: UserBackup[];
+  advertisements: Advertisement[];
   loadContacts: () => Promise<void>;
   loadFriendRequests: () => Promise<void>;
   sendFriendRequest: (recipientId: string) => Promise<void>;
@@ -26,6 +27,20 @@ interface SocialContextType {
   loadStorageSummary: () => Promise<void>;
   createBackup: (snapshotCiphertext: string) => Promise<void>;
   restoreBackup: (backupId: string) => Promise<any>;
+  loadAdvertisements: () => Promise<void>;
+  createAdvertisement: (data: {
+    headline: string;
+    caption?: string;
+    mediaType: 'video' | 'image';
+    mediaUrl: string;
+    ctaText?: string;
+    ctaLink?: string;
+    price?: string;
+    tags?: string[];
+  }) => Promise<void>;
+  likeAdvertisement: (id: string) => Promise<void>;
+  shareAdvertisement: (id: string) => Promise<void>;
+  deleteAdvertisement: (id: string) => Promise<void>;
 }
 
 const SocialContext = createContext<SocialContextType | undefined>(undefined);
@@ -41,6 +56,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [statusGroups, setStatusGroups] = useState<StatusGroup[]>([]);
   const [storageSummary, setStorageSummary] = useState<any>(null);
   const [backups, setBackups] = useState<UserBackup[]>([]);
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
 
   const loadContacts = useCallback(async () => {
     if (!user) return;
@@ -94,6 +110,16 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [user]);
 
+  const loadAdvertisements = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.getAdvertisements();
+      setAdvertisements(res.advertisements || []);
+    } catch (err) {
+      console.error('Failed to load advertisements:', err);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadContacts();
@@ -101,8 +127,9 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       loadDailyFeed();
       loadStatusUpdates();
       loadStorageSummary();
+      loadAdvertisements();
     }
-  }, [user, loadContacts, loadFriendRequests, loadDailyFeed, loadStatusUpdates, loadStorageSummary]);
+  }, [user, loadContacts, loadFriendRequests, loadDailyFeed, loadStatusUpdates, loadStorageSummary, loadAdvertisements]);
 
   const sendFriendRequest = async (recipientId: string) => {
     await api.sendFriendRequest(recipientId);
@@ -162,6 +189,53 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return await api.restoreBackup(backupId);
   };
 
+  const createAdvertisement = async (data: any) => {
+    await api.createAdvertisement(data);
+    await loadAdvertisements();
+  };
+
+  const likeAdvertisement = async (id: string) => {
+    if (!user) return;
+    setAdvertisements((prev) =>
+      prev.map((ad) => {
+        if (ad.id === id) {
+          const hasLiked = ad.likes.includes(user.id);
+          const newLikes = hasLiked ? ad.likes.filter((uid) => uid !== user.id) : [...ad.likes, user.id];
+          return { ...ad, likes: newLikes };
+        }
+        return ad;
+      })
+    );
+    try {
+      const res = await api.likeAdvertisement(id);
+      setAdvertisements((prev) =>
+        prev.map((ad) => (ad.id === id ? { ...ad, likes: res.likes } : ad))
+      );
+    } catch (err) {
+      console.error('Failed to like advertisement:', err);
+      await loadAdvertisements();
+    }
+  };
+
+  const shareAdvertisement = async (id: string) => {
+    setAdvertisements((prev) =>
+      prev.map((ad) => (ad.id === id ? { ...ad, sharesCount: (ad.sharesCount || 0) + 1 } : ad))
+    );
+    try {
+      const res = await api.shareAdvertisement(id);
+      setAdvertisements((prev) =>
+        prev.map((ad) => (ad.id === id ? { ...ad, sharesCount: res.sharesCount } : ad))
+      );
+    } catch (err) {
+      console.error('Failed to share advertisement:', err);
+    }
+  };
+
+  const deleteAdvertisement = async (id: string) => {
+    await api.deleteAdvertisement(id);
+    await loadAdvertisements();
+  };
+
   return (
     <SocialContext.Provider
       value={{
@@ -171,6 +245,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         statusGroups,
         storageSummary,
         backups,
+        advertisements,
         loadContacts,
         loadFriendRequests,
         sendFriendRequest,
@@ -187,6 +262,11 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         loadStorageSummary,
         createBackup,
         restoreBackup,
+        loadAdvertisements,
+        createAdvertisement,
+        likeAdvertisement,
+        shareAdvertisement,
+        deleteAdvertisement,
       }}
     >
       {children}

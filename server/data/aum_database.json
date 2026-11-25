@@ -498,5 +498,84 @@
       "deviceInfo": "iPhone 16 Pro (iOS 19.1)",
       "createdAt": "2026-11-23T15:45:53.276Z"
     }
+  ],
+  "advertisements": [
+    {
+      "id": "ad_1",
+      "userId": "usr_priya",
+      "userName": "Priya Patel",
+      "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80",
+      "userPhone": "+919876543211",
+      "mediaType": "video",
+      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "headline": "Handcrafted Heritage Silk Weaves & Festive Collection ✨",
+      "caption": "Exclusive 100% pure mulberry silk sarees handwoven by master artisans in Varanasi & Kanchipuram. Direct-from-weaver ethical craftsmanship with free pan-India express shipping. Special 20% discount for all AUM contacts this week!",
+      "ctaText": "Inquire on Chat",
+      "ctaLink": "usr_priya",
+      "price": "₹4,999",
+      "likes": [
+        "usr_aarav",
+        "usr_vikram"
+      ],
+      "sharesCount": 18,
+      "tags": [
+        "Handloom",
+        "Artisan",
+        "Festive",
+        "Silk"
+      ],
+      "createdAt": "2026-11-24T23:55:43.918Z"
+    },
+    {
+      "id": "ad_2",
+      "userId": "usr_vikram",
+      "userName": "Vikram Malhotra",
+      "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      "userPhone": "+919876543212",
+      "mediaType": "image",
+      "mediaUrl": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+      "headline": "Himalayan Dark Sky Expedition & Astrophotography Camp 🔭🌌",
+      "caption": "Join our 5-day deep-sky observation retreat in Spiti Valley. Experience zero light pollution, guided observation with 14-inch Dobsonian telescopes, astrophotography masterclasses, and cozy heated mountain tents. Limited batch of 12 spots.",
+      "ctaText": "Reserve Camp Spot",
+      "ctaLink": "https://astrohimalaya.in",
+      "price": "₹18,500 / person",
+      "likes": [
+        "usr_aarav"
+      ],
+      "sharesCount": 31,
+      "tags": [
+        "Travel",
+        "Astronomy",
+        "Himalayas",
+        "Adventure"
+      ],
+      "createdAt": "2026-11-24T21:55:43.918Z"
+    },
+    {
+      "id": "ad_3",
+      "userId": "usr_aarav",
+      "userName": "Aarav Sharma",
+      "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+      "userPhone": "+919876543210",
+      "mediaType": "video",
+      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+      "headline": "Zero-Trust WebRTC & Sovereign Cloud Architecture Advisory 🇮🇳",
+      "caption": "Helping Indian developers and startups engineer peer-to-peer, privacy-first communication tools with device-bound encryption and local working storage. Book a 1-on-1 technical advisory session.",
+      "ctaText": "Book Strategy Call",
+      "ctaLink": "usr_aarav",
+      "price": "Free 30-Min Advisory",
+      "likes": [
+        "usr_priya",
+        "usr_vikram"
+      ],
+      "sharesCount": 45,
+      "tags": [
+        "Tech",
+        "Consulting",
+        "Architecture",
+        "Privacy"
+      ],
+      "createdAt": "2026-11-24T19:55:43.918Z"
+    }
   ]
 }

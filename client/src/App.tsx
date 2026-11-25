@@ -9,6 +9,7 @@ import { ChatList } from './components/chat/ChatList';
 import { ChatWindow } from './components/chat/ChatWindow';
 import { CallHistoryTab } from './components/calling/CallHistoryTab';
 import { DailyFeedReels } from './components/feed/DailyFeedReels';
+import { AdsSpaceReels } from './components/ads/AdsSpaceReels';
 import { ActiveCallModal } from './components/calling/ActiveCallModal';
 import { IncomingCallModal } from './components/calling/IncomingCallModal';
 import { PendingTransfersModal } from './components/chat/PendingTransfersModal';
@@ -113,6 +114,7 @@ const MainApp: React.FC = () => {
 
             {currentTab === 'calls' && <CallHistoryTab />}
             {currentTab === 'feed' && <DailyFeedReels onOpenChatWithUser={handleOpenDirectChat} />}
+            {currentTab === 'ads' && <AdsSpaceReels onOpenChatWithUser={handleOpenDirectChat} />}
           </main>
 
           {/* Navigation Bar */}

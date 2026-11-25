@@ -7,7 +7,7 @@
 
 **AUM** is a next-generation privacy-first social media and messaging application designed around **user data sovereignty**, **end-to-end encryption (E2EE)**, and **three user-selectable storage modes**. 
 
-Unlike conventional social media platforms (WhatsApp, Telegram, Instagram) that retain user content, metadata, and media indefinitely on centralized foreign servers, AUM establishes a sovereign paradigm where **the sender's and recipient's devices act as the primary storage and delivery source**, minimizing cloud exposure to zero by default.
+Unlike conventional social media and messaging platforms that retain user content, metadata, and media indefinitely on centralized foreign servers, AUM establishes a sovereign paradigm where **the sender's and recipient's devices act as the primary storage and delivery source**, minimizing cloud exposure to zero by default.
 
 ---
 
@@ -58,7 +58,13 @@ AUM provides three user-selectable storage choices during onboarding, changeable
 - Support for Photo stories and vibrant Gradient Text stories (Saffron Aura, Sovereign Bharat, Deep Space).
 - Contact privacy filters and live viewer counter.
 
-### 6. 👥 Sovereign Social Graph & Discovery
+### 6. 📢 Sovereign Ads Space (Vertical Full-Screen Showcase)
+- Immersive vertical swipeable video & photo feed allowing users to broadcast advertisements, products, services, or craft showcases directly to all accepted contacts.
+- Like heart animations with double-tap support, in-app / native share modal with live share counter, and direct "Inquire on Chat" opening instant E2EE conversations with the advertiser.
+- Full custom Call-To-Action (CTA) support (direct private chat or custom website link), price pills, expandable descriptions, and category tags.
+- Post new contact advertisements directly with 1-click sample presets or custom media.
+
+### 7. 👥 Sovereign Social Graph & Discovery
 - Discover contacts by username, phone number (+91...), or email.
 - Mutual friend requests (Incoming / Outgoing with Accept / Reject).
 - Blocking mechanism preventing messages, calls, presence, and requests.

@@ -16,6 +16,7 @@ import {
   DailyFeedItem,
   StatusUpdate,
   UserBackup,
+  Advertisement,
 } from '../types';
 
 interface DatabaseSchema {
@@ -33,6 +34,7 @@ interface DatabaseSchema {
   dailyFeedItems: DailyFeedItem[];
   statusUpdates: StatusUpdate[];
   backups: UserBackup[];
+  advertisements: Advertisement[];
 }
 
 const DATA_DIR = path.join(__dirname, '../../data');
@@ -54,6 +56,7 @@ export class Database {
     dailyFeedItems: [],
     statusUpdates: [],
     backups: [],
+    advertisements: [],
   };
 
   constructor() {
@@ -69,6 +72,10 @@ export class Database {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         this.data = JSON.parse(raw);
+        if (!this.data.advertisements || this.data.advertisements.length === 0) {
+          this.data.advertisements = this.getDefaultAdvertisements();
+          this.save();
+        }
         return;
       } catch (err) {
         console.error('Failed to parse existing database file, initializing seeds', err);
@@ -490,6 +497,8 @@ export class Database {
       },
     ];
 
+    const advertisements = this.getDefaultAdvertisements();
+
     this.data = {
       users,
       credentials,
@@ -505,7 +514,68 @@ export class Database {
       dailyFeedItems,
       statusUpdates,
       backups,
+      advertisements,
     };
+  }
+
+  public getDefaultAdvertisements(): Advertisement[] {
+    const now = new Date();
+    return [
+      {
+        id: 'ad_1',
+        userId: 'usr_priya',
+        userName: 'Priya Patel',
+        userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
+        userPhone: '+919876543211',
+        mediaType: 'video',
+        mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        headline: 'Handcrafted Heritage Silk Weaves & Festive Collection ✨',
+        caption: 'Exclusive 100% pure mulberry silk sarees handwoven by master artisans in Varanasi & Kanchipuram. Direct-from-weaver ethical craftsmanship with free pan-India express shipping. Special 20% discount for all AUM contacts this week!',
+        ctaText: 'Inquire on Chat',
+        ctaLink: 'usr_priya',
+        price: '₹4,999',
+        likes: ['usr_aarav', 'usr_vikram'],
+        sharesCount: 18,
+        tags: ['Handloom', 'Artisan', 'Festive', 'Silk'],
+        createdAt: new Date(now.getTime() - 7200000).toISOString(),
+      },
+      {
+        id: 'ad_2',
+        userId: 'usr_vikram',
+        userName: 'Vikram Malhotra',
+        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+        userPhone: '+919876543212',
+        mediaType: 'image',
+        mediaUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+        headline: 'Himalayan Dark Sky Expedition & Astrophotography Camp 🔭🌌',
+        caption: 'Join our 5-day deep-sky observation retreat in Spiti Valley. Experience zero light pollution, guided observation with 14-inch Dobsonian telescopes, astrophotography masterclasses, and cozy heated mountain tents. Limited batch of 12 spots.',
+        ctaText: 'Reserve Camp Spot',
+        ctaLink: 'https://astrohimalaya.in',
+        price: '₹18,500 / person',
+        likes: ['usr_aarav'],
+        sharesCount: 31,
+        tags: ['Travel', 'Astronomy', 'Himalayas', 'Adventure'],
+        createdAt: new Date(now.getTime() - 14400000).toISOString(),
+      },
+      {
+        id: 'ad_3',
+        userId: 'usr_aarav',
+        userName: 'Aarav Sharma',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        userPhone: '+919876543210',
+        mediaType: 'video',
+        mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        headline: 'Zero-Trust WebRTC & Sovereign Cloud Architecture Advisory 🇮🇳',
+        caption: 'Helping Indian developers and startups engineer peer-to-peer, privacy-first communication tools with device-bound encryption and local working storage. Book a 1-on-1 technical advisory session.',
+        ctaText: 'Book Strategy Call',
+        ctaLink: 'usr_aarav',
+        price: 'Free 30-Min Advisory',
+        likes: ['usr_priya', 'usr_vikram'],
+        sharesCount: 45,
+        tags: ['Tech', 'Consulting', 'Architecture', 'Privacy'],
+        createdAt: new Date(now.getTime() - 21600000).toISOString(),
+      },
+    ];
   }
 
   // Getters & Setters
@@ -523,6 +593,12 @@ export class Database {
   public getDailyFeedItems(): DailyFeedItem[] { return this.data.dailyFeedItems; }
   public getStatusUpdates(): StatusUpdate[] { return this.data.statusUpdates; }
   public getBackups(): UserBackup[] { return this.data.backups; }
+  public getAdvertisements(): Advertisement[] { 
+    if (!this.data.advertisements) {
+      this.data.advertisements = [];
+    }
+    return this.data.advertisements; 
+  }
 }
 
 export const db = new Database();

@@ -13,6 +13,7 @@ import { groupRouter } from './routes/group.routes';
 import { feedRouter } from './routes/feed.routes';
 import { statusRouter } from './routes/status.routes';
 import { storageRouter } from './routes/storage.routes';
+import { adRouter } from './routes/ad.routes';
 import { WebSocketGateway } from './websocket/gateway';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use('/api/groups', groupRouter);
 app.use('/api/feed', feedRouter);
 app.use('/api/status', statusRouter);
 app.use('/api/storage', storageRouter);
+app.use('/api/ads', adRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

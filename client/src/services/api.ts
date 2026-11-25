@@ -359,6 +359,45 @@ class ApiService {
   public async clearCache() {
     return this.request<{ success: boolean; message: string }>('/storage/clear-cache', { method: 'POST' });
   }
+
+  // Advertisements (Ads Space)
+  public async getAdvertisements() {
+    return this.request<{ advertisements: any[] }>('/ads');
+  }
+
+  public async createAdvertisement(body: {
+    headline: string;
+    caption?: string;
+    mediaType: 'video' | 'image';
+    mediaUrl: string;
+    ctaText?: string;
+    ctaLink?: string;
+    price?: string;
+    tags?: string[];
+  }) {
+    return this.request<{ advertisement: any }>('/ads', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  public async likeAdvertisement(id: string) {
+    return this.request<{ likes: string[]; likesCount: number; isLiked: boolean }>(`/ads/${id}/like`, {
+      method: 'POST',
+    });
+  }
+
+  public async shareAdvertisement(id: string) {
+    return this.request<{ sharesCount: number }>(`/ads/${id}/share`, {
+      method: 'POST',
+    });
+  }
+
+  public async deleteAdvertisement(id: string) {
+    return this.request<{ success: boolean }>(`/ads/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const api = new ApiService();
