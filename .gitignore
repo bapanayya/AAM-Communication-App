@@ -18,3 +18,4 @@ android/capacitor-cordova-android-plugins/
 # OS files
 .DS_Store
 Thumbs.db
+*.mp4
