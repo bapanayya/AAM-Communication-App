@@ -16,10 +16,10 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, setCurrentTa
   const { callHistory } = useCall();
   const { friendRequests } = useSocial();
 
-  const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-  const missedCalls = callHistory.filter((c) => c.direction === 'missed').length;
-  const pendingCount = pendingTransfers.filter((t) => t.status === 'queued' || t.status === 'transferring').length;
-  const incomingReqCount = friendRequests.incoming.length;
+  const totalUnread = (conversations || []).reduce((acc, c) => acc + (c?.unreadCount || 0), 0);
+  const missedCalls = (callHistory || []).filter((c) => c?.direction === 'missed').length;
+  const pendingCount = (pendingTransfers || []).filter((t) => t?.status === 'queued' || t?.status === 'transferring').length;
+  const incomingReqCount = (friendRequests?.incoming || []).length;
 
   const tabs: { id: NavTab; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     { id: 'chats', label: 'Chats', icon: MessageSquare, badge: totalUnread },

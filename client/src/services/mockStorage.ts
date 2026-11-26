@@ -536,6 +536,20 @@ export class MockStorageService {
       return { user };
     }
 
+    if (endpoint === '/users/settings/me') {
+      return {
+        settings: {
+          userId: this.currentUserId,
+          theme: 'dark',
+          allowLastSeen: true,
+          allowReadReceipts: true,
+          autoDownloadMedia: true,
+          videoQuality: 'high',
+          specialAlertContacts: ['usr_priya'],
+        },
+      };
+    }
+
     // 2. Contacts & Friend Requests
     if (endpoint === '/contacts') {
       const acceptedIds = this.contacts
@@ -562,7 +576,7 @@ export class MockStorageService {
       };
       this.friendRequests.push(fr);
       this.save();
-      return { friendRequest: fr };
+      return { request: fr, friendRequest: fr };
     }
 
     if (endpoint.startsWith('/contacts/request/') && endpoint.endsWith('/accept')) {
@@ -590,7 +604,7 @@ export class MockStorageService {
     }
 
     // 3. Conversations & Messages
-    if (endpoint === '/conversations') {
+    if (endpoint === '/conversations' || endpoint === '/messages/conversations') {
       const userConvs = this.conversations.filter((c) => c.memberIds.includes(this.currentUserId));
       const enriched = userConvs.map((c) => {
         let otherUser = null;
@@ -618,7 +632,7 @@ export class MockStorageService {
       return { conversations: enriched };
     }
 
-    if (endpoint === '/conversations/direct' && method === 'POST') {
+    if ((endpoint === '/conversations/direct' || endpoint === '/messages/conversations/direct') && method === 'POST') {
       const contactId = body.contactUserId;
       let conv = this.conversations.find(
         (c) => c.type === 'direct' && c.memberIds.includes(this.currentUserId) && c.memberIds.includes(contactId)
@@ -643,8 +657,9 @@ export class MockStorageService {
       return { conversation: conv };
     }
 
-    if (endpoint.startsWith('/conversations/') && endpoint.endsWith('/messages')) {
-      const convId = endpoint.split('/')[2];
+    if (endpoint.includes('/conversations/') && endpoint.endsWith('/messages') && method === 'GET') {
+      const parts = endpoint.split('/');
+      const convId = parts[parts.indexOf('conversations') + 1];
       const convMsgs = this.messages
         .filter((m) => m.conversationId === convId)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -661,10 +676,12 @@ export class MockStorageService {
       return { messages: convMsgs };
     }
 
-    if (endpoint === '/messages' && method === 'POST') {
+    if (endpoint.includes('/conversations/') && endpoint.endsWith('/messages') && method === 'POST') {
+      const parts = endpoint.split('/');
+      const convId = parts[parts.indexOf('conversations') + 1];
       const newMsg: Message = {
         id: 'msg_' + Date.now(),
-        conversationId: body.conversationId,
+        conversationId: convId,
         senderId: this.currentUserId,
         recipientId: body.recipientId,
         contentType: body.contentType || 'text',
@@ -679,8 +696,7 @@ export class MockStorageService {
       };
       this.messages.push(newMsg);
 
-      // Update conversation updatedAt
-      const conv = this.conversations.find((c) => c.id === body.conversationId);
+      const conv = this.conversations.find((c) => c.id === convId);
       if (conv) {
         conv.updatedAt = new Date().toISOString();
       }
@@ -689,13 +705,14 @@ export class MockStorageService {
       return { message: newMsg };
     }
 
-    if (endpoint === '/messages/pending') {
+    if (endpoint === '/messages/pending-transfers' || endpoint === '/messages/pending') {
       const pending = this.pendingTransfers.filter((pt) => pt.senderId === this.currentUserId);
-      return { pendingTransfers: pending };
+      return { transfers: pending, pendingTransfers: pending };
     }
 
-    if (endpoint.startsWith('/messages/pending/') && endpoint.endsWith('/retry')) {
-      const ptId = endpoint.split('/')[3];
+    if (endpoint.includes('/pending-transfers/') && endpoint.endsWith('/retry')) {
+      const parts = endpoint.split('/');
+      const ptId = parts[parts.indexOf('pending-transfers') + 1];
       const pt = this.pendingTransfers.find((t) => t.id === ptId);
       if (pt) {
         pt.lastAttemptAt = new Date().toISOString();
@@ -704,11 +721,12 @@ export class MockStorageService {
         if (msg) msg.deliveryState = 'delivered';
         this.save();
       }
-      return { success: true };
+      return { success: true, transfer: pt };
     }
 
-    if (endpoint.startsWith('/messages/pending/') && endpoint.endsWith('/cancel')) {
-      const ptId = endpoint.split('/')[3];
+    if (endpoint.includes('/pending-transfers/') && method === 'DELETE') {
+      const parts = endpoint.split('/');
+      const ptId = parts[parts.indexOf('pending-transfers') + 1];
       this.pendingTransfers = this.pendingTransfers.filter((t) => t.id !== ptId);
       this.save();
       return { success: true };
@@ -743,10 +761,10 @@ export class MockStorageService {
     // 4. Calls
     if (endpoint === '/calls/history') {
       const userCalls = this.callHistory.filter((c) => c.userId === this.currentUserId);
-      return { callHistory: userCalls };
+      return { history: userCalls, callHistory: userCalls };
     }
 
-    if (endpoint === '/calls/initiate' && method === 'POST') {
+    if ((endpoint === '/calls/start' || endpoint === '/calls/initiate') && method === 'POST') {
       const otherUser = this.users.find((u) => u.id === body.recipientId);
       const newRec: CallHistoryRecord = {
         id: 'ch_' + Date.now(),
@@ -764,6 +782,7 @@ export class MockStorageService {
       this.callHistory.unshift(newRec);
       this.save();
       return {
+        call: newRec,
         session: {
           id: newRec.callId,
           type: body.type,

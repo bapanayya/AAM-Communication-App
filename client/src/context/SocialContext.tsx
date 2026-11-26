@@ -62,7 +62,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     try {
       const res = await api.getContacts();
-      setContacts(res.contacts);
+      setContacts(res.contacts || []);
     } catch (err) {
       console.error('Failed to load contacts:', err);
     }
@@ -72,7 +72,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     try {
       const res = await api.getFriendRequests();
-      setFriendRequests(res);
+      setFriendRequests({ incoming: res?.incoming || [], outgoing: res?.outgoing || [] });
     } catch (err) {
       console.error('Failed to load friend requests:', err);
     }
@@ -82,7 +82,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     try {
       const res = await api.getDailyFeed();
-      setDailyFeedItems(res.feedItems);
+      setDailyFeedItems(res.feedItems || []);
     } catch (err) {
       console.error('Failed to load daily feed:', err);
     }
@@ -92,7 +92,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     try {
       const res = await api.getStatusUpdates();
-      setStatusGroups(res.statusGroups);
+      setStatusGroups(res.statusGroups || []);
     } catch (err) {
       console.error('Failed to load status updates:', err);
     }
@@ -104,7 +104,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const res = await api.getStorageSummary();
       setStorageSummary(res);
       const bRes = await api.getBackups();
-      setBackups(bRes.backups);
+      setBackups(bRes?.backups || []);
     } catch (err) {
       console.error('Failed to load storage summary:', err);
     }

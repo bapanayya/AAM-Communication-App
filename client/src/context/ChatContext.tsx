@@ -50,7 +50,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoadingConversations(true);
       const res = await api.getConversations();
-      setConversations(res.conversations);
+      setConversations(res.conversations || []);
     } catch (err) {
       console.error('Failed to load conversations:', err);
     } finally {
@@ -82,7 +82,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     try {
       const res = await api.getPendingTransfers();
-      setPendingTransfers(res.transfers);
+      setPendingTransfers(res.transfers || (res as any).pendingTransfers || []);
     } catch (err) {
       console.error('Failed to load pending transfers:', err);
     }

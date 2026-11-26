@@ -25,7 +25,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   const { statusGroups } = useSocial();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredConversations = conversations.filter((c) => {
+  const filteredConversations = (conversations || []).filter((c) => {
     const q = searchQuery.toLowerCase();
     const title = (c.title || c.name || '').toLowerCase();
     const lastMsgText = (c.lastMessage?.text || '').toLowerCase();

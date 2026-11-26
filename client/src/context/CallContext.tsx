@@ -68,7 +68,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     try {
       const res = await api.getCallHistory();
-      setCallHistory(res.history);
+      setCallHistory(res.history || (res as any).callHistory || []);
     } catch (err) {
       console.error('Failed to load call history:', err);
     }
