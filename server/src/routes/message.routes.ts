@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/storage';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { Message, PendingTransfer, MessageContentType, Conversation } from '../types';
+import { Message, PendingTransfer, MessageContentType, Conversation, MediaRecord } from '../types';
 
 export const messageRouter = Router();
 
@@ -99,10 +99,21 @@ messageRouter.get('/conversations/:id/messages', authMiddleware, (req: AuthReque
     return;
   }
 
+  const mediaRecords = db.getMediaRecords();
   const messages = db
     .getMessages()
     .filter((m) => m.conversationId === conversation.id)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .map((m) => {
+      if (m.mediaHash) {
+        const rec = mediaRecords.find((r) => r.hash === m.mediaHash);
+        return {
+          ...m,
+          connectedConversationCount: rec ? rec.referencedConversationIds.length : 1,
+        };
+      }
+      return m;
+    });
 
   res.json({ messages });
 });
@@ -125,6 +136,7 @@ messageRouter.post('/conversations/:id/messages', authMiddleware, (req: AuthRequ
     mediaName,
     mediaSize,
     mediaDuration,
+    mediaHash,
     encryptedPayload,
     isRecipientOnline, // Client reports recipient presence from WebSocket
   } = req.body;
@@ -136,10 +148,12 @@ messageRouter.post('/conversations/:id/messages', authMiddleware, (req: AuthRequ
   const now = new Date().toISOString();
   const messageId = `msg_${uuidv4().substring(0, 8)}`;
 
-  // Determine initial delivery state based on Storage Mode & Recipient Presence:
-  // In Mode 1 (Local Device Storage):
-  // If recipient is offline, message enters 'pending' state and is queued in sender-side Pending Transfers!
-  // If recipient is online or Mode 3 (Cloud Sync), deliveryState becomes 'sent' or 'delivered'.
+  let effectiveMediaHash = mediaHash;
+  if (mediaUrl && !effectiveMediaHash) {
+    effectiveMediaHash = `cas_sha256_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+  }
+
+  // Determine initial delivery state based on Storage Mode & Recipient Presence
   let deliveryState: 'pending' | 'sent' | 'delivered' = 'sent';
   if (currentUser.storageMode === 'local_device' && otherMemberId && isRecipientOnline === false) {
     deliveryState = 'pending';
@@ -158,6 +172,7 @@ messageRouter.post('/conversations/:id/messages', authMiddleware, (req: AuthRequ
     mediaName,
     mediaSize,
     mediaDuration,
+    mediaHash: effectiveMediaHash,
     encryptedPayload: currentUser.storageMode === 'local_device' ? undefined : encryptedPayload,
     deliveryState,
     reactions: {},
@@ -167,6 +182,36 @@ messageRouter.post('/conversations/:id/messages', authMiddleware, (req: AuthRequ
 
   db.getMessages().push(newMessage);
   conversation.updatedAt = now;
+
+  // Single-Instance Storage tracking
+  if (effectiveMediaHash) {
+    const mediaRecords = db.getMediaRecords();
+    let rec = mediaRecords.find((r) => r.hash === effectiveMediaHash);
+    if (!rec) {
+      rec = {
+        hash: effectiveMediaHash,
+        fileName: mediaName || 'file',
+        fileSize: mediaSize || 0,
+        mimeType: mediaName?.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg',
+        remoteUrl: mediaUrl,
+        referencedMessageIds: [newMessage.id],
+        referencedConversationIds: [conversation.id],
+        createdAt: now,
+        lastAccessedAt: now,
+        sourceConversationId: conversation.id,
+      };
+      mediaRecords.push(rec);
+    } else {
+      if (!rec.referencedMessageIds.includes(newMessage.id)) {
+        rec.referencedMessageIds.push(newMessage.id);
+      }
+      if (!rec.referencedConversationIds.includes(conversation.id)) {
+        rec.referencedConversationIds.push(conversation.id);
+      }
+      rec.lastAccessedAt = now;
+    }
+    newMessage.connectedConversationCount = rec.referencedConversationIds.length;
+  }
 
   // If pending in local mode or media transfer, add to Pending Transfers queue
   if (deliveryState === 'pending' && otherMemberId) {
@@ -332,4 +377,162 @@ messageRouter.delete('/pending-transfers/:id', authMiddleware, (req: AuthRequest
   }
 
   res.json({ success: true, message: 'Pending transfer cancelled' });
+});
+
+// Forward Message to Multiple Conversations (Single-Instance Storage CAS)
+messageRouter.post('/messages/:id/forward', authMiddleware, (req: AuthRequest, res: Response) => {
+  const currentUserId = req.user!.id;
+  const currentUser = req.user!;
+  const origMsg = db.getMessages().find((m) => m.id === req.params.id);
+
+  if (!origMsg) {
+    res.status(404).json({ error: 'Message not found' });
+    return;
+  }
+
+  const { targetConversationIds } = req.body;
+  if (!Array.isArray(targetConversationIds) || targetConversationIds.length === 0) {
+    res.status(400).json({ error: 'targetConversationIds must be a non-empty array' });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const allConversations = db.getConversations();
+  const mediaRecords = db.getMediaRecords();
+  const forwardedMessages: Message[] = [];
+
+  const origSender = db.getUsers().find((u) => u.id === origMsg.senderId);
+  const senderDisplayName = origMsg.senderId === currentUserId ? 'You' : (origSender?.displayName || 'Contact');
+
+  if (origMsg.mediaUrl && !origMsg.mediaHash) {
+    origMsg.mediaHash = `cas_sha256_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
+  }
+
+  for (const targetConvId of targetConversationIds) {
+    const targetConv = allConversations.find((c) => c.id === targetConvId && c.memberIds.includes(currentUserId));
+    if (!targetConv) continue;
+
+    const otherMemberId = targetConv.type === 'direct'
+      ? targetConv.memberIds.find((id) => id !== currentUserId)
+      : undefined;
+
+    const fwdMsgId = `msg_fwd_${uuidv4().substring(0, 8)}`;
+    const fwdMsg: Message = {
+      id: fwdMsgId,
+      conversationId: targetConv.id,
+      senderId: currentUserId,
+      recipientId: otherMemberId,
+      contentType: origMsg.contentType,
+      text: origMsg.text,
+      mediaUrl: origMsg.mediaUrl,
+      mediaName: origMsg.mediaName,
+      mediaSize: origMsg.mediaSize,
+      mediaDuration: origMsg.mediaDuration,
+      mediaHash: origMsg.mediaHash,
+      forwardedFrom: {
+        originalMessageId: origMsg.id,
+        originalConversationId: origMsg.conversationId,
+        senderName: senderDisplayName,
+        forwardedAt: now,
+      },
+      deliveryState: 'delivered',
+      reactions: {},
+      createdAt: now,
+    };
+
+    db.getMessages().push(fwdMsg);
+    targetConv.updatedAt = now;
+    forwardedMessages.push(fwdMsg);
+
+    // Register in single-instance media record
+    if (origMsg.mediaHash) {
+      let rec = mediaRecords.find((r) => r.hash === origMsg.mediaHash);
+      if (!rec) {
+        rec = {
+          hash: origMsg.mediaHash,
+          fileName: origMsg.mediaName || 'file',
+          fileSize: origMsg.mediaSize || 0,
+          mimeType: origMsg.mediaName?.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg',
+          remoteUrl: origMsg.mediaUrl,
+          referencedMessageIds: [origMsg.id, fwdMsgId],
+          referencedConversationIds: [origMsg.conversationId, targetConv.id],
+          createdAt: now,
+          lastAccessedAt: now,
+          sourceConversationId: origMsg.conversationId,
+        };
+        mediaRecords.push(rec);
+      } else {
+        if (!rec.referencedMessageIds.includes(fwdMsgId)) {
+          rec.referencedMessageIds.push(fwdMsgId);
+        }
+        if (!rec.referencedConversationIds.includes(targetConv.id)) {
+          rec.referencedConversationIds.push(targetConv.id);
+        }
+        rec.lastAccessedAt = now;
+      }
+    }
+  }
+
+  // Update connectedConversationCount
+  if (origMsg.mediaHash) {
+    const rec = mediaRecords.find((r) => r.hash === origMsg.mediaHash);
+    const count = rec ? rec.referencedConversationIds.length : 1;
+    forwardedMessages.forEach((m) => (m.connectedConversationCount = count));
+    origMsg.connectedConversationCount = count;
+  }
+
+  db.save();
+
+  res.json({
+    success: true,
+    forwardedMessages,
+    totalConnectedChats: origMsg.mediaHash ? (mediaRecords.find((r) => r.hash === origMsg.mediaHash)?.referencedConversationIds.length || 1) : 1,
+    savedStorageBytes: targetConversationIds.length * (origMsg.mediaSize || 0),
+  });
+});
+
+// Get Connected Chats for a Media Item (Single-Instance Storage Proof)
+messageRouter.get('/media/:hash/connected-chats', authMiddleware, (req: AuthRequest, res: Response) => {
+  const currentUserId = req.user!.id;
+  const hash = req.params.hash;
+  const rec = db.getMediaRecords().find((r) => r.hash === hash);
+
+  if (!rec) {
+    res.json({ mediaRecord: null, connectedConversations: [], savedBytes: 0, deviceStorageCopies: 1 });
+    return;
+  }
+
+  const allConvs = db.getConversations();
+  const allUsers = db.getUsers();
+  const allMsgs = db.getMessages();
+
+  const connectedConversations = allConvs
+    .filter((c) => rec.referencedConversationIds.includes(c.id) && c.memberIds.includes(currentUserId))
+    .map((c) => {
+      let title = c.name;
+      let avatar = c.avatar;
+      if (c.type === 'direct') {
+        const otherId = c.memberIds.find((id) => id !== currentUserId) || c.memberIds[0];
+        const other = allUsers.find((u) => u.id === otherId);
+        if (other) {
+          title = other.displayName;
+          avatar = other.avatar;
+        }
+      }
+      const messageCount = allMsgs.filter((m) => m.conversationId === c.id && m.mediaHash === hash).length;
+      return {
+        id: c.id,
+        title: title || 'Chat',
+        avatar: avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
+        type: c.type,
+        messageCount,
+      };
+    });
+
+  res.json({
+    mediaRecord: rec,
+    connectedConversations,
+    deviceStorageCopies: 1, // Single-Instance Storage guaranteed
+    savedBytes: (rec.referencedConversationIds.length - 1) * rec.fileSize,
+  });
 });

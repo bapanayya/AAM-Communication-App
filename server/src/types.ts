@@ -74,6 +74,27 @@ export interface Conversation {
 export type MessageContentType = 'text' | 'image' | 'video' | 'audio' | 'mixed';
 export type DeliveryState = 'pending' | 'sent' | 'delivered' | 'read';
 
+export interface ForwardInfo {
+  originalMessageId: string;
+  originalConversationId: string;
+  senderName: string;
+  forwardedAt: string;
+}
+
+export interface MediaRecord {
+  hash: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  localBlobUri?: string;
+  remoteUrl?: string;
+  referencedMessageIds: string[];
+  referencedConversationIds: string[];
+  createdAt: string;
+  lastAccessedAt: string;
+  sourceConversationId?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -85,6 +106,9 @@ export interface Message {
   mediaName?: string;
   mediaSize?: number;
   mediaDuration?: number; // For audio/video in seconds
+  mediaHash?: string; // Content-Addressable single-instance hash
+  forwardedFrom?: ForwardInfo;
+  connectedConversationCount?: number;
   encryptedPayload?: string; // Ciphertext for E2EE or Cloud Sync
   deliveryState: DeliveryState;
   reactions: Record<string, string>; // userId -> emoji

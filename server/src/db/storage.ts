@@ -17,6 +17,7 @@ import {
   StatusUpdate,
   UserBackup,
   Advertisement,
+  MediaRecord,
 } from '../types';
 
 interface DatabaseSchema {
@@ -35,6 +36,7 @@ interface DatabaseSchema {
   statusUpdates: StatusUpdate[];
   backups: UserBackup[];
   advertisements: Advertisement[];
+  mediaRecords?: MediaRecord[];
 }
 
 const DATA_DIR = path.join(__dirname, '../../data');
@@ -57,6 +59,7 @@ export class Database {
     statusUpdates: [],
     backups: [],
     advertisements: [],
+    mediaRecords: [],
   };
 
   constructor() {
@@ -598,6 +601,12 @@ export class Database {
       this.data.advertisements = [];
     }
     return this.data.advertisements; 
+  }
+  public getMediaRecords(): MediaRecord[] {
+    if (!this.data.mediaRecords) {
+      this.data.mediaRecords = [];
+    }
+    return this.data.mediaRecords;
   }
 }
 

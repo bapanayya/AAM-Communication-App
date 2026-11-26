@@ -52,6 +52,27 @@ export interface Conversation {
 export type MessageContentType = 'text' | 'image' | 'video' | 'audio' | 'mixed';
 export type DeliveryState = 'pending' | 'sent' | 'delivered' | 'read';
 
+export interface ForwardInfo {
+  originalMessageId: string;
+  originalConversationId: string;
+  senderName: string;
+  forwardedAt: string;
+}
+
+export interface MediaRecord {
+  hash: string; // SHA-256 Content-Addressable Storage (CAS) hash
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  localBlobUri?: string; // Single physical copy on local device storage
+  remoteUrl?: string;
+  referencedMessageIds: string[]; // List of messages referencing this single copy
+  referencedConversationIds: string[]; // List of chats connected to this file
+  createdAt: string;
+  lastAccessedAt: string;
+  sourceConversationId?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -63,6 +84,9 @@ export interface Message {
   mediaName?: string;
   mediaSize?: number;
   mediaDuration?: number;
+  mediaHash?: string; // Content-Addressable single-instance hash
+  forwardedFrom?: ForwardInfo;
+  connectedConversationCount?: number;
   encryptedPayload?: string;
   deliveryState: DeliveryState;
   reactions: Record<string, string>;

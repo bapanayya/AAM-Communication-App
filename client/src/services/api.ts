@@ -222,6 +222,33 @@ class ApiService {
     });
   }
 
+  // Forwarding & Single-Instance Storage (CAS)
+  public async forwardMessage(messageId: string, targetConversationIds: string[]) {
+    return this.request<{
+      success: boolean;
+      forwardedMessages: any[];
+      mediaRecord: any;
+      totalConnectedChats: number;
+      savedStorageBytes: number;
+    }>(`/messages/${messageId}/forward`, {
+      method: 'POST',
+      body: JSON.stringify({ targetConversationIds }),
+    });
+  }
+
+  public async getConnectedChats(mediaHash: string) {
+    return this.request<{
+      mediaRecord: any;
+      connectedConversations: any[];
+      deviceStorageCopies: number;
+      savedBytes: number;
+    }>(`/media/${encodeURIComponent(mediaHash)}/connected-chats`);
+  }
+
+  public async getMediaRecord(mediaHash: string) {
+    return this.request<{ mediaRecord: any }>(`/media/${encodeURIComponent(mediaHash)}`);
+  }
+
   // "My Pending Transfers"
   public async getPendingTransfers() {
     return this.request<{ transfers: any[] }>('/messages/pending-transfers');

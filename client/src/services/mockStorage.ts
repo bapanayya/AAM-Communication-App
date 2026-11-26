@@ -9,6 +9,7 @@ import {
   StatusGroup,
   Advertisement,
   UserBackup,
+  MediaRecord,
 } from '../types';
 
 const STORAGE_KEY = 'aum_local_sovereign_store_v1';
@@ -25,6 +26,7 @@ export class MockStorageService {
   private statusUpdates: StatusUpdate[] = [];
   private advertisements: Advertisement[] = [];
   private backups: UserBackup[] = [];
+  private mediaRecords: Record<string, MediaRecord> = {};
   private currentUserId: string = 'usr_aarav';
 
   constructor() {
@@ -47,10 +49,11 @@ export class MockStorageService {
         this.statusUpdates = parsed.statusUpdates || [];
         this.advertisements = parsed.advertisements || [];
         this.backups = parsed.backups || [];
+        this.mediaRecords = parsed.mediaRecords || {};
         this.currentUserId = parsed.currentUserId || 'usr_aarav';
 
         // If advertisements or conversations are empty in old localStorage, re-seed
-        if (this.advertisements.length === 0 || this.conversations.length === 0) {
+        if (this.advertisements.length === 0 || this.conversations.length === 0 || Object.keys(this.mediaRecords).length === 0) {
           this.seedDefaultData();
           this.save();
         }
@@ -80,12 +83,68 @@ export class MockStorageService {
           statusUpdates: this.statusUpdates,
           advertisements: this.advertisements,
           backups: this.backups,
+          mediaRecords: this.mediaRecords,
           currentUserId: this.currentUserId,
         })
       );
     } catch (e) {
       console.warn('Failed to persist to localStorage:', e);
     }
+  }
+
+  public computeMediaHash(name: string, size?: number, url?: string): string {
+    const raw = `${name}_${size || 0}_${url ? url.split('?')[0] : ''}`;
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    const hex1 = (h1 >>> 0).toString(16).padStart(8, '0');
+    const hex2 = (h2 >>> 0).toString(16).padStart(8, '0');
+    return `cas_sha256_${hex1}${hex2}`;
+  }
+
+  public registerMedia(params: {
+    hash: string;
+    fileName: string;
+    fileSize: number;
+    mimeType?: string;
+    localBlobUri?: string;
+    remoteUrl?: string;
+    messageId: string;
+    conversationId: string;
+  }): MediaRecord {
+    const existing = this.mediaRecords[params.hash];
+    if (existing) {
+      if (!existing.referencedMessageIds.includes(params.messageId)) {
+        existing.referencedMessageIds.push(params.messageId);
+      }
+      if (!existing.referencedConversationIds.includes(params.conversationId)) {
+        existing.referencedConversationIds.push(params.conversationId);
+      }
+      existing.lastAccessedAt = new Date().toISOString();
+      return existing;
+    }
+
+    const newRecord: MediaRecord = {
+      hash: params.hash,
+      fileName: params.fileName,
+      fileSize: params.fileSize,
+      mimeType: params.mimeType || (params.fileName.endsWith('.mp4') ? 'video/mp4' : params.fileName.endsWith('.ogg') || params.fileName.endsWith('.mp3') ? 'audio/ogg' : 'image/jpeg'),
+      localBlobUri: params.localBlobUri || params.remoteUrl,
+      remoteUrl: params.remoteUrl,
+      referencedMessageIds: [params.messageId],
+      referencedConversationIds: [params.conversationId],
+      createdAt: new Date().toISOString(),
+      lastAccessedAt: new Date().toISOString(),
+      sourceConversationId: params.conversationId,
+    };
+    this.mediaRecords[params.hash] = newRecord;
+    return newRecord;
   }
 
   private seedDefaultData() {
@@ -204,6 +263,38 @@ export class MockStorageService {
       },
     ];
 
+    const hash_badge = this.computeMediaHash('AUM_MakeInIndia_Badge.jpg', 1024 * 450, 'https://images.unsplash.com/photo-1532375810709-75b1da00537c');
+    const hash_himalaya = this.computeMediaHash('Himalayan_Observation.jpg', 1024 * 1024 * 3, 'https://images.unsplash.com/photo-1506744038136-46273834b3fb');
+
+    this.mediaRecords = {
+      [hash_badge]: {
+        hash: hash_badge,
+        fileName: 'AUM_MakeInIndia_Badge.jpg',
+        fileSize: 1024 * 450,
+        mimeType: 'image/jpeg',
+        remoteUrl: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80',
+        localBlobUri: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80',
+        referencedMessageIds: ['msg_3'],
+        referencedConversationIds: ['conv_aarav_priya'],
+        createdAt: new Date(now.getTime() - 1800000).toISOString(),
+        lastAccessedAt: new Date(now.getTime() - 1600000).toISOString(),
+        sourceConversationId: 'conv_aarav_priya',
+      },
+      [hash_himalaya]: {
+        hash: hash_himalaya,
+        fileName: 'Himalayan_Observation.jpg',
+        fileSize: 1024 * 1024 * 3,
+        mimeType: 'image/jpeg',
+        remoteUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+        localBlobUri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+        referencedMessageIds: ['msg_4'],
+        referencedConversationIds: ['conv_aarav_vikram'],
+        createdAt: new Date(now.getTime() - 900000).toISOString(),
+        lastAccessedAt: new Date(now.getTime() - 900000).toISOString(),
+        sourceConversationId: 'conv_aarav_vikram',
+      },
+    };
+
     this.messages = [
       {
         id: 'msg_1',
@@ -241,6 +332,8 @@ export class MockStorageService {
         mediaUrl: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80',
         mediaName: 'AUM_MakeInIndia_Badge.jpg',
         mediaSize: 1024 * 450,
+        mediaHash: hash_badge,
+        connectedConversationCount: 1,
         deliveryState: 'read',
         reactions: { usr_aarav: '🔥' },
         createdAt: new Date(now.getTime() - 1800000).toISOString(),
@@ -257,6 +350,8 @@ export class MockStorageService {
         mediaUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
         mediaName: 'Himalayan_Observation.jpg',
         mediaSize: 1024 * 1024 * 3,
+        mediaHash: hash_himalaya,
+        connectedConversationCount: 1,
         deliveryState: 'pending',
         reactions: {},
         createdAt: new Date(now.getTime() - 900000).toISOString(),
@@ -664,11 +759,14 @@ export class MockStorageService {
         .filter((m) => m.conversationId === convId)
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-      // Mark unread as read
+      // Mark unread as read and enrich with connected count
       convMsgs.forEach((m) => {
         if (m.senderId !== this.currentUserId && m.deliveryState !== 'read') {
           m.deliveryState = 'read';
           m.readAt = new Date().toISOString();
+        }
+        if (m.mediaHash && this.mediaRecords[m.mediaHash]) {
+          m.connectedConversationCount = this.mediaRecords[m.mediaHash].referencedConversationIds.length;
         }
       });
       this.save();
@@ -679,6 +777,12 @@ export class MockStorageService {
     if (endpoint.includes('/conversations/') && endpoint.endsWith('/messages') && method === 'POST') {
       const parts = endpoint.split('/');
       const convId = parts[parts.indexOf('conversations') + 1];
+
+      let mediaHash = body.mediaHash;
+      if (body.mediaUrl && !mediaHash) {
+        mediaHash = this.computeMediaHash(body.mediaName || 'file', body.mediaSize, body.mediaUrl);
+      }
+
       const newMsg: Message = {
         id: 'msg_' + Date.now(),
         conversationId: convId,
@@ -690,10 +794,25 @@ export class MockStorageService {
         mediaName: body.mediaName,
         mediaSize: body.mediaSize,
         mediaDuration: body.mediaDuration,
+        mediaHash,
         deliveryState: 'delivered',
         reactions: {},
         createdAt: new Date().toISOString(),
       };
+
+      if (mediaHash) {
+        this.registerMedia({
+          hash: mediaHash,
+          fileName: body.mediaName || 'file',
+          fileSize: body.mediaSize || 0,
+          remoteUrl: body.mediaUrl,
+          messageId: newMsg.id,
+          conversationId: convId,
+        });
+        const rec = this.mediaRecords[mediaHash];
+        newMsg.connectedConversationCount = rec.referencedConversationIds.length;
+      }
+
       this.messages.push(newMsg);
 
       const conv = this.conversations.find((c) => c.id === convId);
@@ -703,6 +822,128 @@ export class MockStorageService {
 
       this.save();
       return { message: newMsg };
+    }
+
+    // Forward message (Single-Instance Storage CAS)
+    if (endpoint.includes('/messages/') && endpoint.endsWith('/forward') && method === 'POST') {
+      const parts = endpoint.split('/');
+      const msgId = parts[parts.indexOf('messages') + 1];
+      const origMsg = this.messages.find((m) => m.id === msgId);
+      if (!origMsg) {
+        throw new Error('Message not found');
+      }
+
+      const targetConvIds: string[] = body.targetConversationIds || [];
+      const origSender = this.users.find((u) => u.id === origMsg.senderId);
+      const senderDisplayName = origMsg.senderId === this.currentUserId ? 'You' : (origSender?.displayName || 'Contact');
+      const now = new Date().toISOString();
+
+      const forwardedMessages: Message[] = [];
+
+      for (const targetConvId of targetConvIds) {
+        const fwdId = 'msg_fwd_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        const fwdMsg: Message = {
+          id: fwdId,
+          conversationId: targetConvId,
+          senderId: this.currentUserId,
+          contentType: origMsg.contentType,
+          text: origMsg.text,
+          mediaUrl: origMsg.mediaUrl,
+          mediaName: origMsg.mediaName,
+          mediaSize: origMsg.mediaSize,
+          mediaDuration: origMsg.mediaDuration,
+          mediaHash: origMsg.mediaHash,
+          forwardedFrom: {
+            originalMessageId: origMsg.id,
+            originalConversationId: origMsg.conversationId,
+            senderName: senderDisplayName,
+            forwardedAt: now,
+          },
+          deliveryState: 'delivered',
+          reactions: {},
+          createdAt: now,
+        };
+
+        this.messages.push(fwdMsg);
+        forwardedMessages.push(fwdMsg);
+
+        // Update Single-Instance Media Record (ZERO duplicate copies!)
+        if (origMsg.mediaHash) {
+          this.registerMedia({
+            hash: origMsg.mediaHash,
+            fileName: origMsg.mediaName || 'file',
+            fileSize: origMsg.mediaSize || 0,
+            remoteUrl: origMsg.mediaUrl,
+            messageId: fwdId,
+            conversationId: targetConvId,
+          });
+        }
+
+        const conv = this.conversations.find((c) => c.id === targetConvId);
+        if (conv) {
+          conv.updatedAt = now;
+        }
+      }
+
+      if (origMsg.mediaHash && this.mediaRecords[origMsg.mediaHash]) {
+        const count = this.mediaRecords[origMsg.mediaHash].referencedConversationIds.length;
+        forwardedMessages.forEach((m) => (m.connectedConversationCount = count));
+        origMsg.connectedConversationCount = count;
+      }
+
+      this.save();
+      return {
+        success: true,
+        forwardedMessages,
+        mediaRecord: origMsg.mediaHash ? this.mediaRecords[origMsg.mediaHash] : null,
+        totalConnectedChats: origMsg.mediaHash ? this.mediaRecords[origMsg.mediaHash].referencedConversationIds.length : 1,
+        savedStorageBytes: targetConvIds.length * (origMsg.mediaSize || 0),
+      };
+    }
+
+    // Media & CAS Connected Chats query
+    if (endpoint.startsWith('/media/') && endpoint.endsWith('/connected-chats')) {
+      const parts = endpoint.split('/');
+      const hash = parts[2];
+      const rec = this.mediaRecords[hash];
+      if (!rec) {
+        return { mediaRecord: null, connectedConversations: [], savedBytes: 0, deviceStorageCopies: 1 };
+      }
+
+      const connectedConversations = this.conversations
+        .filter((c) => rec.referencedConversationIds.includes(c.id))
+        .map((c) => {
+          let title = c.name || c.title;
+          let avatar = c.avatar;
+          if (c.type === 'direct') {
+            const otherId = c.memberIds.find((id) => id !== this.currentUserId) || c.memberIds[0];
+            const other = this.users.find((u) => u.id === otherId);
+            if (other) {
+              title = other.displayName;
+              avatar = other.avatar;
+            }
+          }
+          const messageCount = this.messages.filter((m) => m.conversationId === c.id && m.mediaHash === hash).length;
+          return {
+            id: c.id,
+            title: title || 'Chat',
+            avatar: avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
+            type: c.type,
+            messageCount,
+          };
+        });
+
+      return {
+        mediaRecord: rec,
+        connectedConversations,
+        deviceStorageCopies: 1, // Proof of Single-Instance Storage
+        savedBytes: (rec.referencedConversationIds.length - 1) * rec.fileSize,
+      };
+    }
+
+    if (endpoint.startsWith('/media/') && method === 'GET') {
+      const hash = endpoint.split('/')[2];
+      return { mediaRecord: this.mediaRecords[hash] || null };
     }
 
     if (endpoint === '/messages/pending-transfers' || endpoint === '/messages/pending') {

@@ -205,7 +205,7 @@
         "usr_aarav"
       ],
       "createdAt": "2026-11-24T15:45:53.276Z",
-      "updatedAt": "2026-11-24T15:45:53.276Z"
+      "updatedAt": "2026-11-26T12:35:02.578Z"
     }
   ],
   "messages": [
@@ -255,7 +255,9 @@
       },
       "createdAt": "2026-11-24T15:15:53.276Z",
       "deliveredAt": "2026-11-24T15:17:33.276Z",
-      "readAt": "2026-11-24T15:19:13.276Z"
+      "readAt": "2026-11-24T15:19:13.276Z",
+      "mediaHash": "cas_sha256_ad56210932cb476b",
+      "connectedConversationCount": 2
     },
     {
       "id": "msg_4",
@@ -284,6 +286,46 @@
         "usr_vikram": "🚀"
       },
       "createdAt": "2026-11-24T15:37:33.276Z"
+    },
+    {
+      "id": "msg_fwd_9658333d",
+      "conversationId": "conv_group_aum_builders",
+      "senderId": "usr_aarav",
+      "contentType": "image",
+      "text": "Check out the new Make in India saffron seal for our app banner!",
+      "mediaUrl": "https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80",
+      "mediaName": "AUM_MakeInIndia_Badge.jpg",
+      "mediaSize": 460800,
+      "forwardedFrom": {
+        "originalMessageId": "msg_3",
+        "originalConversationId": "conv_aarav_priya",
+        "senderName": "Priya Patel",
+        "forwardedAt": "2026-11-26T12:34:30.155Z"
+      },
+      "deliveryState": "delivered",
+      "reactions": {},
+      "createdAt": "2026-11-26T12:34:30.155Z"
+    },
+    {
+      "id": "msg_fwd_b72b1d8c",
+      "conversationId": "conv_group_aum_builders",
+      "senderId": "usr_aarav",
+      "contentType": "image",
+      "text": "Check out the new Make in India saffron seal for our app banner!",
+      "mediaUrl": "https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80",
+      "mediaName": "AUM_MakeInIndia_Badge.jpg",
+      "mediaSize": 460800,
+      "mediaHash": "cas_sha256_ad56210932cb476b",
+      "forwardedFrom": {
+        "originalMessageId": "msg_3",
+        "originalConversationId": "conv_aarav_priya",
+        "senderName": "Priya Patel",
+        "forwardedAt": "2026-11-26T12:35:02.578Z"
+      },
+      "deliveryState": "delivered",
+      "reactions": {},
+      "createdAt": "2026-11-26T12:35:02.578Z",
+      "connectedConversationCount": 2
     }
   ],
   "pendingTransfers": [
@@ -576,6 +618,26 @@
         "Privacy"
       ],
       "createdAt": "2026-11-24T19:55:43.918Z"
+    }
+  ],
+  "mediaRecords": [
+    {
+      "hash": "cas_sha256_ad56210932cb476b",
+      "fileName": "AUM_MakeInIndia_Badge.jpg",
+      "fileSize": 460800,
+      "mimeType": "image/jpeg",
+      "remoteUrl": "https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80",
+      "referencedMessageIds": [
+        "msg_3",
+        "msg_fwd_b72b1d8c"
+      ],
+      "referencedConversationIds": [
+        "conv_aarav_priya",
+        "conv_group_aum_builders"
+      ],
+      "createdAt": "2026-11-26T12:35:02.578Z",
+      "lastAccessedAt": "2026-11-26T12:35:02.578Z",
+      "sourceConversationId": "conv_aarav_priya"
     }
   ]
 }

@@ -31,6 +31,8 @@ interface ChatContextType {
   retryTransfer: (id: string) => Promise<void>;
   cancelTransfer: (id: string) => Promise<void>;
   startDirectChat: (contactUserId: string) => Promise<Conversation>;
+  forwardMessage: (messageId: string, targetConversationIds: string[]) => Promise<{ success: boolean; forwardedCount: number; savedBytes: number }>;
+  getConnectedChats: (mediaHash: string) => Promise<{ mediaRecord: any; connectedConversations: any[]; savedBytes: number }>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -260,6 +262,48 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return res.conversation;
   };
 
+  const forwardMessage = async (messageId: string, targetConversationIds: string[]): Promise<{ success: boolean; forwardedCount: number; savedBytes: number }> => {
+    try {
+      const res = await api.forwardMessage(messageId, targetConversationIds);
+      // Broadcast over WebSocket for each forwarded message
+      if (res.forwardedMessages) {
+        res.forwardedMessages.forEach((fwdMsg: Message) => {
+          socket.send('message.send', {
+            message: fwdMsg,
+            conversationId: fwdMsg.conversationId,
+          });
+        });
+      }
+
+      await loadConversations();
+      if (activeConversation) {
+        await loadMessages(activeConversation.id);
+      }
+      return {
+        success: true,
+        forwardedCount: res.forwardedMessages?.length || targetConversationIds.length,
+        savedBytes: res.savedStorageBytes || 0,
+      };
+    } catch (err) {
+      console.error('Failed to forward message:', err);
+      return { success: false, forwardedCount: 0, savedBytes: 0 };
+    }
+  };
+
+  const getConnectedChats = async (mediaHash: string) => {
+    try {
+      const res = await api.getConnectedChats(mediaHash);
+      return {
+        mediaRecord: res.mediaRecord,
+        connectedConversations: res.connectedConversations || [],
+        savedBytes: res.savedBytes || 0,
+      };
+    } catch (err) {
+      console.error('Failed to fetch connected chats for media:', err);
+      return { mediaRecord: null, connectedConversations: [], savedBytes: 0 };
+    }
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -282,6 +326,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         retryTransfer,
         cancelTransfer,
         startDirectChat,
+        forwardMessage,
+        getConnectedChats,
       }}
     >
       {children}
