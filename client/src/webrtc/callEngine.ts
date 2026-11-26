@@ -103,14 +103,25 @@ export class CallEngine {
     }
   }
 
-  // Acquire media stream (real or canvas fallback)
+  // Acquire media stream (real or canvas fallback with battery optimizations)
   public async getLocalStream(type: 'audio' | 'video'): Promise<MediaStream> {
     if (this.localStream) return this.localStream;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: type === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1, // Mono saves 50% audio bandwidth and battery
+        },
+        video: type === 'video' ? {
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          frameRate: { ideal: 24, max: 30 },
+          facingMode: 'user'
+        } : false,
       });
       this.localStream = stream;
       return stream;
@@ -144,11 +155,11 @@ export class CallEngine {
       ctx.arc(320, 240, 150 + Math.sin(angle) * 10, 0, Math.PI * 2);
       ctx.fill();
 
-      // AUM symbol and text
+      // AAM symbol and text
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 36px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🕉️ AUM E2EE', 320, 230);
+      ctx.fillText('AAM E2EE', 320, 230);
       ctx.font = '20px sans-serif';
       ctx.fillStyle = '#fde047';
       ctx.fillText('Encrypted WebRTC Stream', 320, 270);
@@ -179,7 +190,7 @@ export class CallEngine {
     return canvasStream;
   }
 
-  // PeerConnection setup
+  // PeerConnection setup with multi-STUN and self-hosted Oracle TURN
   public async initPeerConnection(callId: string, peerId: string, isInitiator: boolean, type: 'audio' | 'video') {
     this.closePeerConnection();
 
@@ -189,7 +200,19 @@ export class CallEngine {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
+        {
+          urls: [
+            'turn:92.4.67.156:3478?transport=udp',
+            'turn:92.4.67.156:3478?transport=tcp'
+          ],
+          username: 'aam_user',
+          credential: 'aam_turn_secret_2026'
+        }
       ],
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
     });
 
     // Add local tracks
@@ -225,7 +248,13 @@ export class CallEngine {
     };
 
     if (isInitiator) {
-      const offer = await this.peerConnection.createOffer();
+      let offer = await this.peerConnection.createOffer();
+      if (offer.sdp) {
+        offer = new RTCSessionDescription({
+          type: offer.type,
+          sdp: this.optimizeSdpForBattery(offer.sdp)
+        });
+      }
       await this.peerConnection.setLocalDescription(offer);
       socket.send('call.sdp', {
         callId,
@@ -235,13 +264,32 @@ export class CallEngine {
     }
   }
 
+  // Optimize SDP to enable Opus DTX (Discontinuous Transmission) and FEC
+  private optimizeSdpForBattery(sdp: string): string {
+    return sdp.replace(/a=fmtp:(\d+) (.*)/g, (match, pt, params) => {
+      if (params.includes('minptime') || params.includes('useinbandfec')) {
+        let updated = params;
+        if (!updated.includes('usedtx=1')) updated += ';usedtx=1';
+        if (!updated.includes('useinbandfec=1')) updated += ';useinbandfec=1';
+        return `a=fmtp:${pt} ${updated}`;
+      }
+      return match;
+    });
+  }
+
   private setupSocketListeners() {
     socket.on('call.sdp', async (data: { senderId: string; callId: string; sdp: RTCSessionDescriptionInit }) => {
       if (!this.peerConnection) return;
       try {
         await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
         if (data.sdp.type === 'offer') {
-          const answer = await this.peerConnection.createAnswer();
+          let answer = await this.peerConnection.createAnswer();
+          if (answer.sdp) {
+            answer = new RTCSessionDescription({
+              type: answer.type,
+              sdp: this.optimizeSdpForBattery(answer.sdp)
+            });
+          }
           await this.peerConnection.setLocalDescription(answer);
           socket.send('call.sdp', {
             callId: data.callId,

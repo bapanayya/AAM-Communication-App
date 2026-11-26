@@ -166,9 +166,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               <span className="text-base">🇮🇳</span>
               <h5 className="font-bold text-amber-400 text-xs">Make in India • Sovereign Privacy</h5>
             </div>
-            <p className="text-[10px] text-slate-300 leading-relaxed">
-              AUM is built with a commitment to user data sovereignty: cryptographic keys remain on your device, message bodies never sit unencrypted on central servers, and calling leverages audited WebRTC transport.
+            <p className="text-[10px] text-slate-300 leading-relaxed mb-3">
+              AAM is built with a commitment to user data sovereignty: cryptographic keys remain on your device, message bodies never sit unencrypted on central servers, and calling leverages audited WebRTC transport.
             </p>
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-800 text-[11px]">
+              <a
+                href="./licenses.html"
+                target="_blank"
+                rel="noreferrer"
+                className="text-amber-400 hover:text-amber-300 underline font-medium"
+              >
+                Open Source Licenses
+              </a>
+              <span className="text-slate-600">•</span>
+              <a
+                href="./privacy-policy.html"
+                target="_blank"
+                rel="noreferrer"
+                className="text-amber-400 hover:text-amber-300 underline font-medium"
+              >
+                Privacy Policy
+              </a>
+              <span className="text-slate-600">•</span>
+              <a
+                href="./features.html"
+                target="_blank"
+                rel="noreferrer"
+                className="text-amber-400 hover:text-amber-300 underline font-medium"
+              >
+                Architecture & Features
+              </a>
+            </div>
           </div>
         </div>
 

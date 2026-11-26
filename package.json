@@ -1,7 +1,7 @@
 {
-  "name": "aum-messaging-app",
+  "name": "aam-messaging-app",
   "version": "1.0.0",
-  "description": "AUM: Sovereign Privacy-First Messaging & Social Media (Web, Android & PWA)",
+  "description": "AAM: Sovereign Messaging, Audio & Video Calling, Ads Broadcasting (Web, Android & PWA)",
   "main": "client/dist/index.html",
   "scripts": {
     "build:web": "cd client && npm run build",
@@ -11,7 +11,7 @@
     "dev": "cd server && npm run dev"
   },
   "keywords": [
-    "aum",
+    "aam",
     "messaging",
     "social-media",
     "privacy",

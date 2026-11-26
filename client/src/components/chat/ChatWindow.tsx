@@ -98,7 +98,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
     if (type === 'image') {
       await sendMessage({
         contentType: 'image',
-        text: 'Shared photo via AUM Sovereign Storage',
+        text: 'Shared photo via AAM Sovereign Storage',
         mediaUrl: 'https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=800&q=80',
         mediaName: 'Photo_AUM_Capture.jpg',
         mediaSize: 1024 * 512,
@@ -163,7 +163,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl mb-4 text-amber-400">
           🕉️
         </div>
-        <h3 className="text-base font-semibold text-slate-200">AUM Private Messaging</h3>
+        <h3 className="text-base font-semibold text-slate-200">AAM Private Messaging</h3>
         <p className="text-xs text-slate-400 max-w-sm mt-1">
           Select a conversation or start a new encrypted chat with an accepted contact. Content is protected with sovereign E2EE encryption.
         </p>
@@ -498,7 +498,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
               {safetyFingerprint || '4820 9183 2049'}
             </div>
             <div className="text-[10px] text-slate-500 text-center">
-              AUM Sovereign Cryptographic Layer • AES-GCM 256 / SHA-256
+              AAM Sovereign Cryptographic Layer • AES-GCM 256 / SHA-256
             </div>
           </div>
         </div>

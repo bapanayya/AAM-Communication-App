@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AUM: Sovereign Privacy-First Messaging & Social Media Platform — Architecture & Technical Specifications</title>
-  <meta name="description" content="Comprehensive technical architecture and characteristic features specification of AUM — a sovereign, end-to-end encrypted messaging and social platform built with React 19, TypeScript, Capacitor 6, Android 15, and WebRTC.">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>AAM: Sovereign Privacy-First Messaging & Social Media Platform — Architecture & Technical Specifications</title>
+  <meta name="description" content="Comprehensive technical architecture and characteristic features specification of AAM — a sovereign, end-to-end encrypted messaging and social platform built with React 19, TypeScript, Capacitor 6, Android 15, and WebRTC.">
+  <link rel="icon" type="image/svg+xml" href="client/public/favicon.svg">
   <style>
     :root {
       --bg-dark: #080c17;
@@ -257,6 +257,13 @@
       margin-bottom: 24px;
     }
 
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -484,13 +491,13 @@
       <div class="hero-title-group">
         <div class="hero-logo">🕉️</div>
         <div>
-          <h1 class="hero-title">AUM: Sovereign Privacy-First Messaging & Social Media</h1>
+          <h1 class="hero-title">AAM: Sovereign Privacy-First Messaging & Social Media</h1>
           <p style="font-size: 14px; color: var(--saffron-light); font-weight: 600; margin-top: 4px;">Complete System Architecture, Characteristic Features & Technology Specifications</p>
         </div>
       </div>
 
       <p class="hero-subtitle">
-        AUM establishes a breakthrough sovereign communication paradigm where the user's personal device acts as the primary storage and delivery engine. Built with military-grade client-side encryption, WebRTC real-time voice and video, sender-side offline queues, and user-controlled contact advertising, AUM eliminates centralized server retention and preserves absolute user data sovereignty.
+        AAM establishes a breakthrough sovereign communication paradigm where the user's personal device acts as the primary storage and delivery engine. Built with military-grade client-side encryption, WebRTC real-time voice and video, sender-side offline queues, and user-controlled contact advertising, AAM eliminates centralized server retention and preserves absolute user data sovereignty.
       </p>
 
       <div class="hero-meta-grid">
@@ -500,7 +507,7 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">Package Name</span>
-          <span class="meta-value"><code>in.aum.messaging</code></span>
+          <span class="meta-value"><code>in.AAM.messaging</code></span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Target Platform</span>
@@ -531,7 +538,7 @@
         <h2 class="section-title">1. Executive Overview & Architectural Paradigm</h2>
       </div>
       <p class="section-desc">
-        Modern digital communication has long been dominated by centralized client-server silos that harvest user interaction graphs, log private contacts, and retain encrypted or unencrypted media indefinitely on central servers. AUM fundamentally re-architects this model.
+        Modern digital communication has long been dominated by centralized client-server silos that harvest user interaction graphs, log private contacts, and retain encrypted or unencrypted media indefinitely on central servers. AAM fundamentally re-architects this model.
       </p>
 
       <div class="grid-2">
@@ -539,7 +546,7 @@
           <div class="card-badge badge-gold">Sovereign Device-First Model</div>
           <h3 class="card-title">Primary Device Storage</h3>
           <div class="card-body">
-            In AUM's default architecture, the sender's and recipient's hardware devices serve as the single source of truth. The application core stores zero persistent plaintext or media content in central databases. Content is held securely in the sender's client database until the recipient connects, establishing direct peer-to-peer delivery.
+            In AAM's default architecture, the sender's and recipient's hardware devices serve as the single source of truth. The application core stores zero persistent plaintext or media content in central databases. Content is held securely in the sender's client database until the recipient connects, establishing direct peer-to-peer delivery.
           </div>
         </div>
 
@@ -547,7 +554,7 @@
           <div class="card-badge badge-green">Pure Privacy Architecture</div>
           <h3 class="card-title">Zero Behavioral Harvesting</h3>
           <div class="card-body">
-            AUM eliminates all third-party tracking scripts, advertising auction SDKs, behavioral analytics, and telemetry beacons. User identity discovery is strictly mutual via verified contact requests, ensuring no spam, unsolicited scraping, or unsolicited message delivery.
+            AAM eliminates all third-party tracking scripts, advertising auction SDKs, behavioral analytics, and telemetry beacons. User identity discovery is strictly mutual via verified contact requests, ensuring no spam, unsolicited scraping, or unsolicited message delivery.
           </div>
         </div>
       </div>
@@ -560,7 +567,7 @@
         <h2 class="section-title">2. Core Innovation: The 3 User-Selectable Storage Modes</h2>
       </div>
       <p class="section-desc">
-        AUM empowers each user to choose their preferred data residency model during onboarding, with instant, transparent migration available at any time through the in-app Storage Management center.
+        AAM empowers each user to choose their preferred data residency model during onboarding, with instant, transparent migration available at any time through the in-app Storage Management center.
       </p>
 
       <div class="grid-3">
@@ -667,7 +674,7 @@
         <h2 class="section-title">3. Comprehensive Feature Suite Breakdown</h2>
       </div>
       <p class="section-desc">
-        Every feature in AUM was engineered from first principles to balance modern user expectations with strict data sovereignty.
+        Every feature in AAM was engineered from first principles to balance modern user expectations with strict data sovereignty.
       </p>
 
       <div class="grid-2">
@@ -711,7 +718,7 @@
           <div class="card-badge badge-gold">Signature Innovation</div>
           <h3 class="card-title">⏳ "My Pending Transfers" Sender-Side Queue</h3>
           <div class="card-body">
-            The visible manifestation of AUM's Mode 1 architecture:
+            The visible manifestation of AAM's Mode 1 architecture:
             <ul>
               <li><strong>Transparent Queue Inspector:</strong> When a recipient is offline, outbound media and files are not stored on foreign cloud servers. They remain indexed locally in the sender's client database.</li>
               <li><strong>Granular Control:</strong> Senders view recipient name, file format, thumbnail, payload size (KB/MB), and timestamp.</li>
@@ -879,7 +886,7 @@
         <h2 class="section-title">5. Client-Side Sovereign Storage Engine</h2>
       </div>
       <p class="section-desc">
-        To allow the web application to run completely standalone on static hosting platforms (such as GitHub Pages) and mobile devices without requiring a locally running Node.js server, AUM incorporates an intelligent dual-mode storage engine.
+        To allow the web application to run completely standalone on static hosting platforms (such as GitHub Pages) and mobile devices without requiring a locally running Node.js server, AAM incorporates an intelligent dual-mode storage engine.
       </p>
 
       <div class="diagram-container">
@@ -917,7 +924,7 @@
         <h2 class="section-title">6. Security Architecture & Play Store Compliance</h2>
       </div>
       <p class="section-desc">
-        AUM complies with international digital privacy regulations and Google Play's rigorous 2026 developer policies.
+        AAM complies with international digital privacy regulations and Google Play's rigorous 2026 developer policies.
       </p>
 
       <div class="table-responsive">
@@ -971,10 +978,10 @@
       </p>
 
       <pre class="code-block"><code><span class="code-comment"># Repository Root Directory Tree</span>
-<span class="code-accent">AUM-Messaging-App/</span>
+<span class="code-accent">AAM-Messaging-App/</span>
 ├── <span class="code-accent">android/</span>                                <span class="code-comment"># Native Android Studio Project</span>
 │   ├── app/
-│   │   ├── build.gradle                   <span class="code-comment"># Namespace 'in.aum.messaging', Target SDK 36, Release Signing</span>
+│   │   ├── build.gradle                   <span class="code-comment"># Namespace 'in.AAM.messaging', Target SDK 36, Release Signing</span>
 │   │   ├── upload-keystore.jks            <span class="code-comment"># Production Play Store cryptographic signing keystore</span>
 │   │   └── src/main/AndroidManifest.xml   <span class="code-comment"># Permissions: Camera, Audio, Internet, Network State</span>
 │   └── variables.gradle                   <span class="code-comment"># compileSdkVersion=36, targetSdkVersion=36, minSdk=24</span>
@@ -1022,12 +1029,12 @@
 
     <!-- FOOTER -->
     <footer class="doc-footer">
-      <p style="margin-bottom: 8px;"><strong>🕉️ AUM Messaging Platform</strong> — Built with Pride in India 🇮🇳</p>
+      <p style="margin-bottom: 8px;"><strong>🕉️ AAM Messaging Platform</strong> — Built with Pride in India 🇮🇳</p>
       <p style="margin-bottom: 12px;">Complying with Google Play Store 2026 Developer Guidelines & the Indian Digital Personal Data Protection Act 2023.</p>
       <p>
-        <a href="https://bapanayya.github.io/AUM-Messaging-App/" target="_blank">Live Web Application</a> •
-        <a href="https://github.com/bapanayya/AUM-Messaging-App" target="_blank">GitHub Repository</a> •
-        <a href="https://bapanayya.github.io/AUM-Messaging-App/privacy-policy.html" target="_blank">Privacy Policy</a>
+        <a href="https://bapanayya.github.io/AAM-Messaging-App/" target="_blank">Live Web Application</a> •
+        <a href="https://github.com/bapanayya/AAM-Messaging-App" target="_blank">GitHub Repository</a> •
+        <a href="https://bapanayya.github.io/AAM-Messaging-App/privacy-policy.html" target="_blank">Privacy Policy</a>
       </p>
     </footer>
 

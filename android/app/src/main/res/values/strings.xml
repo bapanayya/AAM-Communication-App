@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AUM</string>
-    <string name="title_activity_main">AUM</string>
+    <string name="app_name">AAM</string>
+    <string name="title_activity_main">AAM</string>
     <string name="package_name">in.aum.messaging</string>
     <string name="custom_url_scheme">in.aum.messaging</string>
 </resources>

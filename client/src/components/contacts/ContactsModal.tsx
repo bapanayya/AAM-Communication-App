@@ -65,7 +65,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({ onClose, onOpenDir
               <Users className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-100">AUM Contacts & Network</h2>
+              <h2 className="text-sm font-bold text-slate-100">AAM Contacts & Network</h2>
               <p className="text-[11px] text-slate-400">Accepted relationships & friend requests</p>
             </div>
           </div>

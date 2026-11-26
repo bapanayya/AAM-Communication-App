@@ -128,7 +128,7 @@ export const AdsSpaceReels: React.FC<AdsSpaceReelsProps> = ({ onOpenChatWithUser
       try {
         await navigator.share({
           title: ad.headline,
-          text: `${ad.headline} - Posted by ${ad.userName} on AUM Sovereign Ads Space`,
+          text: `${ad.headline} - Posted by ${ad.userName} on AAM Sovereign Ads Space`,
           url: shareUrl,
         });
         return;

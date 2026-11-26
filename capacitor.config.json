@@ -1,6 +1,6 @@
 {
   "appId": "in.aum.messaging",
-  "appName": "AUM",
+  "appName": "AAM",
   "webDir": "client/dist",
   "server": {
     "androidScheme": "https"

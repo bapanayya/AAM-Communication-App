@@ -1,19 +1,19 @@
-# 🕉️ AUM — Privacy-First Messaging & Social Media Application
+# 🕉️ AAM — Privacy-First Messaging & Social Media Application
 ### *Proudly Make in India 🇮🇳 | Sovereign End-to-End Encrypted Architecture*
 
 ---
 
 ## 🌟 Executive Overview
 
-**AUM** is a next-generation privacy-first social media and messaging application designed around **user data sovereignty**, **end-to-end encryption (E2EE)**, and **three user-selectable storage modes**. 
+**AAM** is a next-generation privacy-first social media and messaging application designed around **user data sovereignty**, **end-to-end encryption (E2EE)**, and **three user-selectable storage modes**. 
 
-Unlike conventional social media and messaging platforms that retain user content, metadata, and media indefinitely on centralized foreign servers, AUM establishes a sovereign paradigm where **the sender's and recipient's devices act as the primary storage and delivery source**, minimizing cloud exposure to zero by default.
+Unlike conventional social media and messaging platforms that retain user content, metadata, and media indefinitely on centralized foreign servers, AAM establishes a sovereign paradigm where **the sender's and recipient's devices act as the primary storage and delivery source**, minimizing cloud exposure to zero by default.
 
 ---
 
 ## 🛡️ Core Product Differentiator: The 3 Storage Modes
 
-AUM provides three user-selectable storage choices during onboarding, changeable at any time through a secure, transparent migration flow:
+AAM provides three user-selectable storage choices during onboarding, changeable at any time through a secure, transparent migration flow:
 
 | Capability | Mode 1: Local Device Storage (Default) | Mode 2: Local Storage + Encrypted Backup | Mode 3: Paid Encrypted Cloud Storage |
 | :--- | :--- | :--- | :--- |
@@ -46,7 +46,7 @@ AUM provides three user-selectable storage choices during onboarding, changeable
 - **Call History**: Complete logs of incoming, outgoing, and missed calls with one-tap redial.
 
 ### 3. ⏳ "My Pending Transfers" (Sender-Side Queue)
-- A dedicated screen showcasing AUM's signature feature: undelivered media and messages awaiting offline recipients are transparently listed with file size, recipient, status, and manual retry or cancel actions.
+- A dedicated screen showcasing AAM's signature feature: undelivered media and messages awaiting offline recipients are transparently listed with file size, recipient, status, and manual retry or cancel actions.
 
 ### 4. 🎬 Daily Moments Feed (Reels / Stories)
 - A vertical, chronological stream of photos and videos received from accepted contacts today.
@@ -79,7 +79,7 @@ AUM provides three user-selectable storage choices during onboarding, changeable
 ## 🏗️ Codebase Structure
 
 ```
-AUM-Messaging-App/
+AAM-Messaging-App/
 ├── server/                                # Node.js / TypeScript Backend
 │   ├── src/
 │   │   ├── types.ts                      # Core entity definitions matching specifications
@@ -132,7 +132,7 @@ AUM-Messaging-App/
 │   ├── vite.config.ts
 │   └── package.json
 │
-├── AUM-Social-Media-App-Design-ChatGPT-Chat.docx
+├── AAM-Social-Media-App-Design-ChatGPT-Chat.docx
 ├── Privacy_First_Messaging_App_Final_Architecture_Review.docx
 ├── Privacy_First_Messaging_App_Updated_Architecture_with_Calling.docx
 └── README.md
@@ -198,5 +198,5 @@ You can switch between any of these accounts in 1 click using the top-right prof
 ---
 
 ## 🇮🇳 License & Attribution
-Designed and built adhering to the architectural requirements defined in the **AUM Architecture Review** and **Make in India Sovereign Digital Privacy Roadmap**.
+Designed and built adhering to the architectural requirements defined in the **AAM Architecture Review** and **Make in India Sovereign Digital Privacy Roadmap**.
 Distributed under the Apache 2.0 License.

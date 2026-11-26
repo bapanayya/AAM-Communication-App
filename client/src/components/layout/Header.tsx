@@ -38,13 +38,13 @@ export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onO
     <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-slate-100 px-4 py-2.5 flex items-center justify-between sticky top-0 z-40 select-none">
       {/* Brand & Made in India */}
       <div className="flex items-center space-x-3">
-        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 shadow-md shadow-orange-950/40">
-          <span className="text-xl font-bold tracking-tight text-slate-950 font-serif">🕉️</span>
+        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 border border-amber-500/30 overflow-hidden shadow-md shadow-orange-950/40">
+          <img src="./aam-icon.png" alt="AAM Logo" className="w-full h-full object-cover" />
         </div>
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-lg font-bold tracking-wide bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200 bg-clip-text text-transparent">
-              AUM
+            <h1 className="text-lg font-extrabold tracking-wide bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200 bg-clip-text text-transparent">
+              AAM
             </h1>
             <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
               <span>🇮🇳</span> Make in India

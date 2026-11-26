@@ -39,7 +39,7 @@ export const PendingTransfersModal: React.FC<PendingTransfersModalProps> = ({ on
         <div className="p-3 bg-amber-950/30 border-b border-amber-900/30 text-[11px] text-amber-200/90 flex items-start space-x-2.5">
           <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <p>
-            Unlike traditional messaging apps that store your private photos and videos indefinitely on central cloud servers, AUM keeps undelivered media safely on <strong>your device</strong> until your contact comes online.
+            Unlike traditional messaging apps that store your private photos and videos indefinitely on central cloud servers, AAM keeps undelivered media safely on <strong>your device</strong> until your contact comes online.
           </p>
         </div>
 

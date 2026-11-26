@@ -1,15 +1,15 @@
 {
-  "name": "aum-messaging-server",
+  "name": "aam-messaging-server",
   "version": "1.0.0",
-  "description": "AUM Privacy-First Messaging & Social Media Backend Server with WebRTC Signalling",
+  "description": "AAM Privacy-First Messaging, Audio & Video Calling, and Ads Broadcasting Backend Server with WebRTC Signalling",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
-  "keywords": ["aum", "privacy", "messaging", "webrtc", "e2ee"],
-  "author": "AUM Team",
+  "keywords": ["aam", "privacy", "messaging", "webrtc", "e2ee"],
+  "author": "AAM Team",
   "license": "Apache-2.0",
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -24,7 +24,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.12",
+    "@types/jsonwebtoken": "^9.0.8",
     "@types/node": "^25.2.3",
     "@types/uuid": "^11.0.3",
     "@types/ws": "^8.18.1",

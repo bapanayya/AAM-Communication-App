@@ -1,11 +1,11 @@
-# 🚀 Google Play Store Listing & Submission Guide: AUM
+# 🚀 Google Play Store Listing & Submission Guide: AAM
 
-**App Title**: `AUM: Private Chat & Call`  
-**Package Name**: `in.aum.messaging`  
+**App Title**: `AAM: Private Chat & Call`  
+**Package Name**: `in.AAM.messaging`  
 **Publisher**: The Competitive Edge / Bapanayya  
 **Category**: Communication / Social  
 **Content Rating**: Everyone (PEGI 3 / IARC 3+)  
-**Privacy Policy URL**: [https://bapanayya.github.io/AUM-Messaging-App/privacy-policy.html](https://bapanayya.github.io/AUM-Messaging-App/privacy-policy.html)  
+**Privacy Policy URL**: [https://bapanayya.github.io/AAM-Messaging-App/privacy-policy.html](https://bapanayya.github.io/AAM-Messaging-App/privacy-policy.html)  
 
 ---
 
@@ -13,7 +13,7 @@
 
 ### 1. App Title (Max 30 characters)
 ```text
-AUM: Private Chat & Call
+AAM: Private Chat & Call
 ```
 *(Length: 24 characters)*
 
@@ -29,13 +29,13 @@ Sovereign E2EE messaging, video calls & 3 storage modes. Proudly Made in India.
 
 ### 3. Full Description (Max 4000 characters)
 ```text
-🇮🇳 AUM — Sovereign Privacy-First Messaging & Social Media
+🇮🇳 AAM — Sovereign Privacy-First Messaging & Social Media
 Designed and engineered around absolute user data sovereignty, audited end-to-end encryption (E2EE), and user-selectable storage modes. Proudly Made in India.
 
-Unlike conventional messaging and social media platforms that store your private chats, photos, videos, and personal moments indefinitely on central foreign servers, AUM establishes a sovereign communication paradigm where your device acts as the primary storage and delivery source.
+Unlike conventional messaging and social media platforms that store your private chats, photos, videos, and personal moments indefinitely on central foreign servers, AAM establishes a sovereign communication paradigm where your device acts as the primary storage and delivery source.
 
 🌟 CORE INNOVATION: 3 USER-SELECTABLE STORAGE MODES
-AUM gives you full ownership of where your personal data lives:
+AAM gives you full ownership of where your personal data lives:
 
 1. Mode 1: Local Device Storage (Default & 100% Free)
 • Messages, photographs, and videos are saved solely on your device.
@@ -87,7 +87,7 @@ AUM gives you full ownership of where your personal data lives:
 • Zero behavioral profiling or location harvesting.
 • Fully compliant with the Indian Digital Personal Data Protection (DPDP) Act 2023 and GDPR.
 
-Experience true digital freedom. Reclaim your privacy with AUM!
+Experience true digital freedom. Reclaim your privacy with AAM!
 ```
 
 ---

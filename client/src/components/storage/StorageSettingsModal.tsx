@@ -156,7 +156,7 @@ export const StorageSettingsModal: React.FC<StorageSettingsModalProps> = ({ onCl
               Choose Your Storage Mode
             </h3>
             <p className="text-[11px] text-slate-400 mb-3">
-              AUM offers three distinct storage options. You can switch modes at any time with complete transparency.
+              AAM offers three distinct storage options. You can switch modes at any time with complete transparency.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

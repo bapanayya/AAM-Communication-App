@@ -114,7 +114,7 @@ export const ActiveCallModal: React.FC = () => {
             </div>
 
             <h2 className="text-xl font-bold text-slate-100">{peerInfo?.name}</h2>
-            <p className="text-xs text-slate-400 mt-1">AUM Sovereign Voice Encryption</p>
+            <p className="text-xs text-slate-400 mt-1">AAM Sovereign Voice Encryption</p>
             <p className="text-sm font-semibold text-amber-400 mt-2 font-mono">
               {callState === 'connected' ? formatDuration(callDuration) : 'Connecting voice session...'}
             </p>
