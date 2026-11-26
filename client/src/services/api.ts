@@ -1,3 +1,5 @@
+import { mockStorage } from './mockStorage';
+
 const API_BASE = 'http://localhost:5000/api';
 
 class ApiService {
@@ -30,16 +32,30 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'API request failed');
+    // On GitHub Pages, mobile browsers, or standalone PWA/Android, directly use the sovereign local client engine
+    if (!isLocalhost) {
+      return mockStorage.handleMockRequest(endpoint, options) as T;
     }
-    return data;
+
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'API request failed');
+      }
+      return data;
+    } catch (err) {
+      console.warn(`Remote backend unavailable at ${API_BASE}. Falling back to sovereign local store for ${endpoint}`);
+      return mockStorage.handleMockRequest(endpoint, options) as T;
+    }
   }
 
   // Auth

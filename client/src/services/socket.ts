@@ -15,6 +15,22 @@ class SocketService {
       return;
     }
 
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    if (!isLocalhost) {
+      // Simulate sovereign local P2P presence on GitHub Pages / Mobile
+      setTimeout(() => {
+        this.emitLocal('connected', {
+          userId: 'usr_aarav',
+          onlineUserIds: ['usr_aarav', 'usr_priya', 'usr_vikram'],
+        });
+        this.emitLocal('connection_status', { isConnected: true });
+      }, 100);
+      return;
+    }
+
     try {
       this.ws = new WebSocket(`ws://localhost:5000/ws?token=${encodeURIComponent(token)}`);
 

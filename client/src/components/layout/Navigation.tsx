@@ -34,7 +34,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, setCurrentTa
   ];
 
   return (
-    <nav className="bg-slate-900/95 backdrop-blur-md border-t sm:border-t-0 sm:border-r border-slate-800 text-slate-400 flex sm:flex-col justify-around sm:justify-start sm:p-2 z-30 select-none">
+    <nav className="bg-slate-900/95 backdrop-blur-md border-t sm:border-t-0 sm:border-r border-slate-800 text-slate-400 flex sm:flex-col overflow-x-auto sm:overflow-x-visible scrollbar-none px-2 py-1.5 sm:p-2 z-30 select-none gap-1 sm:gap-0.5 items-center sm:items-stretch shadow-lg">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = currentTab === tab.id;
@@ -42,9 +42,9 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, setCurrentTa
           <button
             key={tab.id}
             onClick={() => setCurrentTab(tab.id)}
-            className={`relative flex flex-col sm:flex-row items-center sm:space-x-3 px-3 py-2 sm:py-2.5 sm:px-3.5 rounded-xl transition font-medium text-xs sm:w-full ${
+            className={`relative flex flex-col sm:flex-row items-center sm:space-x-3 px-2.5 py-1.5 sm:py-2.5 sm:px-3.5 rounded-xl transition font-medium text-xs flex-shrink-0 min-w-[58px] sm:min-w-0 sm:w-full ${
               isActive
-                ? 'text-amber-400 bg-amber-500/10 font-semibold'
+                ? 'text-amber-400 bg-amber-500/10 font-bold'
                 : 'hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -56,7 +56,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, setCurrentTa
                 </span>
               ) : null}
             </div>
-            <span className="text-[11px] sm:text-xs mt-1 sm:mt-0">{tab.label}</span>
+            <span className="text-[10px] sm:text-xs mt-1 sm:mt-0 whitespace-nowrap">{tab.label}</span>
           </button>
         );
       })}
