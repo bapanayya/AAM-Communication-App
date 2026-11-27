@@ -6,6 +6,8 @@ export interface User {
   displayName: string;
   phoneNumber?: string;
   email?: string;
+  isPhoneVerified?: boolean;
+  isEmailVerified?: boolean;
   avatar?: string;
   bio?: string;
   storageMode: StorageMode;

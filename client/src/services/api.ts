@@ -167,17 +167,31 @@ class ApiService {
     });
   }
 
-  public async sendOtp(recipient: string) {
-    return this.request<{ success: boolean; message: string; demoCode: string }>('/auth/send-otp', {
+  public async sendOtp(recipient: string, type?: 'phone' | 'email') {
+    return this.request<{
+      success: boolean;
+      message: string;
+      testingCode?: string;
+      demoCode?: string;
+      recipient: string;
+      type: string;
+      expiresInSeconds: number;
+    }>('/auth/send-otp', {
       method: 'POST',
-      body: JSON.stringify({ recipient }),
+      body: JSON.stringify({ recipient, type }),
     });
   }
 
-  public async verifyOtp(recipient: string, otpCode: string) {
-    return this.request<{ success: boolean; verified: boolean }>('/auth/verify-otp', {
+  public async verifyOtp(recipient: string, otpCode: string, type?: 'phone' | 'email') {
+    return this.request<{
+      success: boolean;
+      verified: boolean;
+      recipient: string;
+      type: string;
+      verificationToken: string;
+    }>('/auth/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ recipient, otpCode }),
+      body: JSON.stringify({ recipient, otpCode, type }),
     });
   }
 

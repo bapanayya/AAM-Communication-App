@@ -222,7 +222,30 @@ export class MockStorageService {
     }
 
     if (cleanPath === '/auth/send-otp') {
-      return { success: true, message: 'OTP sent successfully (Demo: 123456)', demoCode: '123456' };
+      const code = '123456';
+      return {
+        success: true,
+        message: `OTP sent successfully for ${body.recipient || 'recipient'} (Testing Code: ${code})`,
+        testingCode: code,
+        demoCode: code,
+        recipient: body.recipient,
+        type: body.type,
+        expiresInSeconds: 600,
+      };
+    }
+
+    if (cleanPath === '/auth/verify-otp') {
+      const code = String(body.otpCode).trim();
+      if (code === '123456' || code === '741085' || code.length === 6) {
+        return {
+          success: true,
+          verified: true,
+          recipient: body.recipient,
+          type: body.type,
+          verificationToken: `mock_verify_token_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        };
+      }
+      return { success: false, error: 'Invalid verification code. Please check and retry.' };
     }
 
     if (cleanPath === '/users/search') {
