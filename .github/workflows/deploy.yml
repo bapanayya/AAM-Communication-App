@@ -52,7 +52,8 @@ jobs:
           cp AAM_Application_Architecture_and_Flow.pdf site/ 2>/dev/null || true
           cp -r assets site/ 2>/dev/null || true
           touch site/.nojekyll
-          # Fetch latest release APK if available
+          # Fetch latest release APKs if available
+          curl -L -f -s -o site/downloads/AAM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AAM.apk || true
           curl -L -f -s -o site/downloads/AUM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AUM.apk || true
 
       - name: Deploy to gh-pages branch (Dual-Mode Fallback)
@@ -65,6 +66,7 @@ jobs:
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
+        continue-on-error: true
         with:
           path: './site'
 
@@ -74,7 +76,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    continue-on-error: true
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
