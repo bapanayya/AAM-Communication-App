@@ -1,3 +1,5 @@
+import { isCapacitorNative } from './api';
+
 type EventCallback = (data: any) => void;
 
 export function getSocketUrl(token: string): string {
@@ -5,9 +7,16 @@ export function getSocketUrl(token: string): string {
     const custom = localStorage.getItem('aam_custom_ws_url');
     if (custom) return `${custom}?token=${encodeURIComponent(token)}`;
 
+    // Native mobile app must ALWAYS connect to Cloud WebSocket
+    if (isCapacitorNative()) {
+      return `wss://instantly-resolved-driven-happens.trycloudflare.com/ws?token=${encodeURIComponent(token)}`;
+    }
+
     const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return `ws://localhost:5000/ws?token=${encodeURIComponent(token)}`;
+    if (window.location.protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      if (localStorage.getItem('aam_use_local_backend') === 'true') {
+        return `ws://localhost:5000/ws?token=${encodeURIComponent(token)}`;
+      }
     }
   }
   // Cloud Live WSS (with TLS) via Oracle Cloud VM tunnel

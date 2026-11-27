@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Users,
   Search,
@@ -10,14 +10,18 @@ import {
   Video,
   Clock,
   UserCheck,
-  ShieldCheck,
   RefreshCw,
   Sparkles,
+  Send,
+  AlertCircle,
+  Inbox,
+  SendHorizontal,
 } from 'lucide-react';
 import { useSocial } from '../../context/SocialContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCall } from '../../context/CallContext';
 import { api } from '../../services/api';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 interface ContactsModalProps {
   onClose: () => void;
@@ -26,15 +30,15 @@ interface ContactsModalProps {
   initialQuery?: string;
 }
 
-export const ContactsModal: React.FC<ContactsModalProps> = ({
+const ContactsModalInner: React.FC<ContactsModalProps> = ({
   onClose,
   onOpenDirectChat,
   initialTab = 'search',
   initialQuery = '',
 }) => {
   const {
-    contacts,
-    friendRequests,
+    contacts = [],
+    friendRequests = { incoming: [], outgoing: [] },
     acceptFriendRequest,
     rejectFriendRequest,
     cancelFriendRequest,
@@ -42,25 +46,33 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
     loadContacts,
     loadFriendRequests,
   } = useSocial();
-  const { user, onlineUserIds } = useAuth();
+  const { user, onlineUserIds = [] } = useAuth();
   const { startCall } = useCall();
 
   const [activeTab, setActiveTab] = useState<'search' | 'contacts' | 'requests'>(
-    contacts.length === 0 ? 'search' : initialTab
+    (contacts && contacts.length === 0) ? 'search' : initialTab
   );
+  const [requestsSubTab, setRequestsSubTab] = useState<'incoming' | 'outgoing'>('incoming');
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [sendingRequestTo, setSendingRequestTo] = useState<Record<string, boolean>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'online' | 'new'>('all');
 
-  // Fetch registered users from backend on mount
+  // Direct Send Friend Request Form State
+  const [directRecipientInput, setDirectRecipientInput] = useState('');
+  const [isSendingDirect, setIsSendingDirect] = useState(false);
+  const [directSendStatus, setDirectSendStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const debounceTimerRef = useRef<any>(null);
+
+  // Fetch registered users from backend
   const fetchRegisteredUsers = async (query = '') => {
     setIsLoadingUsers(true);
     try {
       const res = await api.searchUsers(query);
-      setRegisteredUsers(res.users || []);
-    } catch (err) {
+      setRegisteredUsers(Array.isArray(res?.users) ? res.users : []);
+    } catch (err: any) {
       console.error('Error fetching registered users:', err);
     } finally {
       setIsLoadingUsers(false);
@@ -69,12 +81,19 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
 
   useEffect(() => {
     fetchRegisteredUsers(searchQuery);
+    if (loadFriendRequests) loadFriendRequests();
+    if (loadContacts) loadContacts();
   }, []);
 
-  // Handle live search as user types
+  // Debounced search handling
   const handleQueryChange = (val: string) => {
     setSearchQuery(val);
-    fetchRegisteredUsers(val.trim());
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      fetchRegisteredUsers(val.trim());
+    }, 250);
   };
 
   const handleSendFriendRequest = async (targetId: string) => {
@@ -82,10 +101,38 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
     try {
       await sendFriendRequest(targetId);
       await fetchRegisteredUsers(searchQuery);
-    } catch (err) {
+      if (loadFriendRequests) await loadFriendRequests();
+    } catch (err: any) {
       console.error('Send friend request error:', err);
     } finally {
       setSendingRequestTo((prev) => ({ ...prev, [targetId]: false }));
+    }
+  };
+
+  const handleDirectSendRequest = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const ident = directRecipientInput.trim();
+    if (!ident) return;
+
+    setIsSendingDirect(true);
+    setDirectSendStatus(null);
+    try {
+      await sendFriendRequest(ident);
+      setDirectSendStatus({
+        type: 'success',
+        message: `Friend request successfully sent to "${ident}"!`,
+      });
+      setDirectRecipientInput('');
+      if (loadFriendRequests) await loadFriendRequests();
+      await fetchRegisteredUsers(searchQuery);
+      setRequestsSubTab('outgoing');
+    } catch (err: any) {
+      setDirectSendStatus({
+        type: 'error',
+        message: err?.message || `Unable to find user "${ident}". Please check username or mobile number.`,
+      });
+    } finally {
+      setIsSendingDirect(false);
     }
   };
 
@@ -93,7 +140,8 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
     try {
       await cancelFriendRequest(requestId);
       await fetchRegisteredUsers(searchQuery);
-    } catch (err) {
+      if (loadFriendRequests) await loadFriendRequests();
+    } catch (err: any) {
       console.error('Cancel request error:', err);
     }
   };
@@ -102,39 +150,48 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
     try {
       await acceptFriendRequest(requestId);
       await fetchRegisteredUsers(searchQuery);
-    } catch (err) {
+      if (loadFriendRequests) await loadFriendRequests();
+      if (loadContacts) await loadContacts();
+    } catch (err: any) {
       console.error('Accept request error:', err);
     }
   };
 
-  // Filtered registered users
+  // Safe filter for displayed registered users
   const displayedUsers = useMemo(() => {
+    if (!Array.isArray(registeredUsers)) return [];
     return registeredUsers.filter((u) => {
+      if (!u || !u.id) return false;
       if (filterMode === 'online') {
-        return onlineUserIds.includes(u.id);
+        return Array.isArray(onlineUserIds) && onlineUserIds.includes(u.id);
       }
       if (filterMode === 'new') {
-        return !u.isFriend && u.friendRequestStatus === 'none';
+        return !u.isFriend && (u.friendRequestStatus === 'none' || !u.friendRequestStatus);
       }
       return true;
     });
   }, [registeredUsers, filterMode, onlineUserIds]);
 
-  // Filtered contacts
+  // Safe filter for contacts
   const filteredContacts = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
+    if (!Array.isArray(contacts)) return [];
+    const q = (searchQuery || '').toLowerCase().trim();
     if (!q) return contacts;
-    return contacts.filter(
-      (c) =>
-        (c.displayName || '').toLowerCase().includes(q) ||
-        (c.username || '').toLowerCase().includes(q) ||
-        (c.phoneNumber && c.phoneNumber.includes(q))
-    );
+    return contacts.filter((c) => {
+      if (!c) return false;
+      const dName = (c.displayName || '').toLowerCase();
+      const uName = (c.username || '').toLowerCase();
+      const phone = c.phoneNumber || '';
+      return dName.includes(q) || uName.includes(q) || phone.includes(q);
+    });
   }, [contacts, searchQuery]);
 
+  const incomingList = Array.isArray(friendRequests?.incoming) ? friendRequests.incoming : [];
+  const outgoingList = Array.isArray(friendRequests?.outgoing) ? friendRequests.outgoing : [];
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 select-none animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-slate-800">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 select-none animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-slate-800">
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
           <div className="flex items-center space-x-2.5">
@@ -144,11 +201,11 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
             <div>
               <h2 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                 <span>AAM Contacts & Friends</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
-                  Live
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                  Cloud Live
                 </span>
               </h2>
-              <p className="text-[11px] text-slate-400">Connect, chat, call & add sovereign contacts</p>
+              <p className="text-[11px] text-slate-400">Search, send friend requests, chat & call</p>
             </div>
           </div>
           <button
@@ -201,9 +258,13 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
             }`}
           >
             <span>Requests</span>
-            {friendRequests.incoming.length > 0 ? (
+            {incomingList.length > 0 ? (
               <span className="bg-rose-500 text-white rounded-full text-[9px] px-1.5 py-0.2 font-bold animate-pulse">
-                {friendRequests.incoming.length}
+                {incomingList.length}
+              </span>
+            ) : outgoingList.length > 0 ? (
+              <span className="bg-amber-500 text-slate-950 rounded-full text-[9px] px-1.5 py-0.2 font-bold">
+                {outgoingList.length}
               </span>
             ) : null}
           </button>
@@ -256,7 +317,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Online Now</span>
+                <span>Online</span>
               </button>
               <button
                 onClick={() => setFilterMode('new')}
@@ -267,6 +328,13 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                 }`}
               >
                 New Friends
+              </button>
+              <button
+                onClick={() => fetchRegisteredUsers(searchQuery)}
+                className="ml-auto p-1 text-slate-400 hover:text-amber-400 transition"
+                title="Refresh user list"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -282,7 +350,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                 <div className="py-14 text-center text-slate-500 text-xs flex flex-col items-center justify-center space-y-2">
                   <Users className="w-10 h-10 text-slate-700" />
                   <p className="font-semibold text-slate-300">
-                    {searchQuery ? `No users matching "${searchQuery}"` : 'No other users registered yet'}
+                    {searchQuery ? `No users matching "${searchQuery}"` : 'No other users found'}
                   </p>
                   <p className="text-[11px] text-slate-500 max-w-xs">
                     {searchQuery
@@ -299,10 +367,14 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                 </div>
               ) : (
                 displayedUsers.map((u) => {
-                  const isOnline = onlineUserIds.includes(u.id);
-                  const isFriend = u.isFriend;
-                  const reqStatus = u.friendRequestStatus; // 'incoming' | 'outgoing' | 'none'
-                  const isSendingThis = sendingRequestTo[u.id];
+                  if (!u || !u.id) return null;
+                  const isOnline = Boolean(Array.isArray(onlineUserIds) && onlineUserIds.includes(u.id));
+                  const isFriend = Boolean(u.isFriend);
+                  const reqStatus = u.friendRequestStatus || 'none'; // 'incoming' | 'outgoing' | 'none'
+                  const isSendingThis = Boolean(sendingRequestTo[u.id]);
+                  const displayName = u.displayName || u.username || 'AAM User';
+                  const username = u.username || 'user';
+                  const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
 
                   return (
                     <div
@@ -313,11 +385,11 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                       <div className="flex items-center space-x-3 min-w-0">
                         <div className="relative flex-shrink-0">
                           <img
-                            src={
-                              u.avatar ||
-                              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
-                            }
-                            alt={u.displayName}
+                            src={u.avatar || defaultAvatar}
+                            alt={displayName}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = defaultAvatar;
+                            }}
                             className="w-11 h-11 rounded-full object-cover border border-slate-700 shadow-sm"
                           />
                           <span
@@ -330,7 +402,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-1.5">
-                            <h4 className="text-xs font-bold text-slate-100 truncate">{u.displayName}</h4>
+                            <h4 className="text-xs font-bold text-slate-100 truncate">{displayName}</h4>
                             {u.isSelf && (
                               <span className="flex-shrink-0 text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
                                 You
@@ -342,7 +414,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-400 truncate">@{u.username}</p>
+                          <p className="text-[10px] text-slate-400 truncate">@{username}</p>
                           {u.phoneNumber && (
                             <p className="text-[10px] text-amber-400/80 font-mono truncate">{u.phoneNumber}</p>
                           )}
@@ -379,7 +451,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                                 startCall({
                                   type: 'audio',
                                   recipientId: u.id,
-                                  recipientName: u.displayName,
+                                  recipientName: displayName,
                                   recipientAvatar: u.avatar,
                                 });
                                 onClose();
@@ -397,7 +469,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                                 startCall({
                                   type: 'video',
                                   recipientId: u.id,
-                                  recipientName: u.displayName,
+                                  recipientName: displayName,
                                   recipientAvatar: u.avatar,
                                 });
                                 onClose();
@@ -409,7 +481,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                               <span className="hidden sm:inline text-xs">Video</span>
                             </button>
 
-                            {/* 4. Friend Status Button */}
+                            {/* 4. Friend Request Status Button */}
                             {isFriend ? (
                               <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs flex items-center" title="Already in your Contacts">
                                 <UserCheck className="w-3.5 h-3.5" />
@@ -417,11 +489,11 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                             ) : reqStatus === 'outgoing' ? (
                               <button
                                 onClick={() => u.friendRequestId && handleCancelRequest(u.friendRequestId)}
-                                className="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-[10px] font-medium transition flex items-center space-x-1"
-                                title="Click to cancel outgoing request"
+                                className="px-2 py-1.5 rounded-xl bg-amber-500/10 hover:bg-rose-500/20 text-amber-400 hover:text-rose-400 border border-amber-500/20 text-[10px] font-medium transition flex items-center space-x-1"
+                                title="Outgoing request pending. Click to cancel"
                               >
                                 <Clock className="w-3 h-3 text-amber-400" />
-                                <span>Pending</span>
+                                <span>Pending (Cancel)</span>
                               </button>
                             ) : reqStatus === 'incoming' ? (
                               <button
@@ -473,7 +545,11 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
               </div>
             ) : (
               filteredContacts.map((c) => {
-                const isOnline = onlineUserIds.includes(c.id);
+                if (!c || !c.id) return null;
+                const isOnline = Boolean(Array.isArray(onlineUserIds) && onlineUserIds.includes(c.id));
+                const displayName = c.displayName || c.username || 'AAM Friend';
+                const username = c.username || 'user';
+                const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
 
                 return (
                   <div
@@ -483,11 +559,11 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                     <div className="flex items-center space-x-3 min-w-0">
                       <div className="relative flex-shrink-0">
                         <img
-                          src={
-                            c.avatar ||
-                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
-                          }
-                          alt={c.displayName}
+                          src={c.avatar || defaultAvatar}
+                          alt={displayName}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = defaultAvatar;
+                          }}
                           className="w-11 h-11 rounded-full object-cover border border-slate-600"
                         />
                         <span
@@ -498,8 +574,8 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                         />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-slate-100 truncate">{c.displayName}</h4>
-                        <p className="text-[10px] text-slate-400 truncate">@{c.username}</p>
+                        <h4 className="text-xs font-bold text-slate-100 truncate">{displayName}</h4>
+                        <p className="text-[10px] text-slate-400 truncate">@{username}</p>
                         {c.phoneNumber && (
                           <p className="text-[10px] text-amber-400/80 font-mono truncate">{c.phoneNumber}</p>
                         )}
@@ -528,7 +604,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                           startCall({
                             type: 'audio',
                             recipientId: c.id,
-                            recipientName: c.displayName,
+                            recipientName: displayName,
                             recipientAvatar: c.avatar,
                           });
                           onClose();
@@ -545,7 +621,7 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
                           startCall({
                             type: 'video',
                             recipientId: c.id,
-                            recipientName: c.displayName,
+                            recipientName: displayName,
                             recipientAvatar: c.avatar,
                           });
                           onClose();
@@ -564,111 +640,228 @@ export const ContactsModal: React.FC<ContactsModalProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Friend Requests */}
+        {/* Tab 3: Friend Requests (Incoming & Outgoing) */}
         {activeTab === 'requests' && (
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Incoming Requests */}
-            <div>
-              <h4 className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
-                <span>Incoming Requests</span>
-                <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400 text-[10px] border border-slate-700">
-                  {friendRequests.incoming.length}
-                </span>
-              </h4>
+            {/* Direct Send Friend Request Form */}
+            <div className="p-3 bg-slate-950/60 border border-amber-500/20 rounded-2xl space-y-2">
+              <div className="flex items-center space-x-1.5">
+                <Send className="w-3.5 h-3.5 text-amber-400" />
+                <h4 className="text-xs font-bold text-slate-200">Send New Friend Request</h4>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Enter any registered user's @username or mobile number to send them a friend request directly:
+              </p>
+              <form onSubmit={handleDirectSendRequest} className="flex items-center space-x-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="e.g. kavya, kushi, or +919999988888"
+                  value={directRecipientInput}
+                  onChange={(e) => setDirectRecipientInput(e.target.value)}
+                  className="flex-1 bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  type="submit"
+                  disabled={isSendingDirect || !directRecipientInput.trim()}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-bold text-xs flex items-center space-x-1 transition flex-shrink-0"
+                >
+                  {isSendingDirect ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <SendHorizontal className="w-3.5 h-3.5" />
+                  )}
+                  <span>Send Request</span>
+                </button>
+              </form>
 
-              {friendRequests.incoming.length === 0 ? (
-                <div className="py-6 text-center text-slate-500 text-xs bg-slate-950/40 rounded-2xl border border-slate-800/60">
-                  No pending incoming requests.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {friendRequests.incoming.map((req) => (
-                    <div
-                      key={req.id}
-                      className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3 min-w-0">
-                        <img
-                          src={
-                            req.sender?.avatar ||
-                            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80'
-                          }
-                          alt="Sender"
-                          className="w-10 h-10 rounded-full object-cover border border-slate-600"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-100 truncate">{req.sender?.displayName}</h4>
-                          <p className="text-[10px] text-slate-400 truncate">@{req.sender?.username}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        <button
-                          onClick={() => handleAcceptRequest(req.id)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1 transition shadow-sm"
-                          title="Accept Request"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Accept</span>
-                        </button>
-                        <button
-                          onClick={() => rejectFriendRequest(req.id)}
-                          className="p-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-rose-400 transition"
-                          title="Decline Request"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {directSendStatus && (
+                <div
+                  className={`p-2 rounded-xl text-[11px] flex items-center space-x-1.5 ${
+                    directSendStatus.type === 'success'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{directSendStatus.message}</span>
                 </div>
               )}
             </div>
 
-            {/* Outgoing Requests */}
-            {friendRequests.outgoing && friendRequests.outgoing.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5">
-                  <span>Sent Requests (Pending)</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400 text-[10px] border border-slate-700">
-                    {friendRequests.outgoing.length}
+            {/* Sub-tabs: Received vs Sent Requests */}
+            <div className="flex border-b border-slate-800 bg-slate-950/40 rounded-xl p-1 text-xs">
+              <button
+                onClick={() => setRequestsSubTab('incoming')}
+                className={`flex-1 py-1.5 rounded-lg font-semibold transition flex items-center justify-center space-x-1.5 ${
+                  requestsSubTab === 'incoming'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Inbox className="w-3.5 h-3.5" />
+                <span>Received Requests</span>
+                {incomingList.length > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-bold">
+                    {incomingList.length}
                   </span>
-                </h4>
-                <div className="space-y-2">
-                  {friendRequests.outgoing.map((req) => (
-                    <div
-                      key={req.id}
-                      className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3 min-w-0">
-                        <img
-                          src={
-                            req.recipient?.avatar ||
-                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
-                          }
-                          alt="Recipient"
-                          className="w-9 h-9 rounded-full object-cover border border-slate-700"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-200 truncate">{req.recipient?.displayName}</h4>
-                          <p className="text-[10px] text-slate-400 truncate">@{req.recipient?.username}</p>
-                        </div>
-                      </div>
+                )}
+              </button>
 
-                      <button
-                        onClick={() => handleCancelRequest(req.id)}
-                        className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 text-xs font-medium transition"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <button
+                onClick={() => setRequestsSubTab('outgoing')}
+                className={`flex-1 py-1.5 rounded-lg font-semibold transition flex items-center justify-center space-x-1.5 ${
+                  requestsSubTab === 'outgoing'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <SendHorizontal className="w-3.5 h-3.5" />
+                <span>Sent Requests (Outgoing)</span>
+                {outgoingList.length > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    {outgoingList.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Sub-tab 1: Received Requests */}
+            {requestsSubTab === 'incoming' && (
+              <div>
+                {incomingList.length === 0 ? (
+                  <div className="py-8 text-center text-slate-500 text-xs bg-slate-950/40 rounded-2xl border border-slate-800/60 space-y-1">
+                    <p className="font-semibold text-slate-300">No pending received requests</p>
+                    <p className="text-[11px] text-slate-500">
+                      When someone sends you a friend request, it will appear here for you to accept.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {incomingList.map((req) => {
+                      if (!req) return null;
+                      const sender: any = req.sender || {};
+                      const sName = sender.displayName || sender.username || 'AAM User';
+                      const sUser = sender.username || 'user';
+                      const sAvatar = sender.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(sUser)}`;
+
+                      return (
+                        <div
+                          key={req.id}
+                          className="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 flex items-center justify-between"
+                        >
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <img
+                              src={sAvatar}
+                              alt={sName}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(sUser)}`;
+                              }}
+                              className="w-10 h-10 rounded-full object-cover border border-slate-600 flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-slate-100 truncate">{sName}</h4>
+                              <p className="text-[10px] text-slate-400 truncate">@{sUser}</p>
+                              {sender.phoneNumber && (
+                                <p className="text-[10px] text-amber-400/80 font-mono truncate">{sender.phoneNumber}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleAcceptRequest(req.id)}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1 transition shadow-sm"
+                              title="Accept Request"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Accept</span>
+                            </button>
+                            <button
+                              onClick={() => rejectFriendRequest(req.id)}
+                              className="p-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-rose-400 transition"
+                              title="Decline Request"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Sub-tab 2: Sent Requests (Outgoing) */}
+            {requestsSubTab === 'outgoing' && (
+              <div>
+                {outgoingList.length === 0 ? (
+                  <div className="py-8 text-center text-slate-500 text-xs bg-slate-950/40 rounded-2xl border border-slate-800/60 space-y-1">
+                    <p className="font-semibold text-slate-300">No pending sent requests</p>
+                    <p className="text-[11px] text-slate-500">
+                      Use the "Send New Friend Request" box above or search people in "Find People" to add friends.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {outgoingList.map((req) => {
+                      if (!req) return null;
+                      const recipient: any = req.recipient || {};
+                      const rName = recipient.displayName || recipient.username || 'AAM User';
+                      const rUser = recipient.username || 'user';
+                      const rAvatar = recipient.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(rUser)}`;
+
+                      return (
+                        <div
+                          key={req.id}
+                          className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3 flex items-center justify-between"
+                        >
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <img
+                              src={rAvatar}
+                              alt={rName}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(rUser)}`;
+                              }}
+                              className="w-10 h-10 rounded-full object-cover border border-slate-700 flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center space-x-1.5">
+                                <h4 className="text-xs font-bold text-slate-200 truncate">{rName}</h4>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium flex items-center space-x-1">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  <span>Pending</span>
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 truncate">@{rUser}</p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleCancelRequest(req.id)}
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-transparent hover:border-rose-500/30 text-xs font-medium transition"
+                            title="Cancel outgoing request"
+                          >
+                            Cancel Request
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
       </div>
     </div>
+  );
+};
+
+export const ContactsModal: React.FC<ContactsModalProps> = (props) => {
+  return (
+    <ErrorBoundary fallbackTitle="Contacts & Friends Display Error">
+      <ContactsModalInner {...props} />
+    </ErrorBoundary>
   );
 };

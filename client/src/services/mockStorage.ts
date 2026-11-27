@@ -228,19 +228,20 @@ export class MockStorageService {
     if (cleanPath === '/users/search') {
       const q = (urlParams.get('q') || '').toLowerCase().trim();
       const cleanDigits = q.replace(/\D/g, '');
-      const acceptedIds = this.contacts
-        .filter((c) => c.userId === this.currentUserId)
+      const acceptedIds = (this.contacts || [])
+        .filter((c) => c && c.userId === this.currentUserId)
         .map((c) => c.contactUserId);
-      const pendingReqs = this.friendRequests.filter(
-        (fr) => (fr.senderId === this.currentUserId || fr.recipientId === this.currentUserId) && fr.status === 'pending'
+      const pendingReqs = (this.friendRequests || []).filter(
+        (fr) => fr && (fr.senderId === this.currentUserId || fr.recipientId === this.currentUserId) && fr.status === 'pending'
       );
 
-      const matchedUsers = this.users
-        .filter((u) => !q ? u.id !== this.currentUserId : true)
+      const matchedUsers = (this.users || [])
+        .filter((u) => u && (!q ? u.id !== this.currentUserId : true))
         .filter((u) => {
+          if (!u) return false;
           if (!q) return true;
-          const matchU = u.username.toLowerCase().includes(q);
-          const matchD = u.displayName.toLowerCase().includes(q);
+          const matchU = u.username ? u.username.toLowerCase().includes(q) : false;
+          const matchD = u.displayName ? u.displayName.toLowerCase().includes(q) : false;
           const matchE = u.email ? u.email.toLowerCase().includes(q) : false;
           const matchP = u.phoneNumber ? u.phoneNumber.includes(q) : false;
           const matchPD = cleanDigits.length >= 3 && u.phoneNumber ? u.phoneNumber.replace(/\D/g, '').includes(cleanDigits) : false;
@@ -308,19 +309,56 @@ export class MockStorageService {
     }
 
     if (cleanPath === '/contacts/requests') {
-      const incoming = this.friendRequests.filter((fr) => fr.recipientId === this.currentUserId && fr.status === 'pending');
-      const outgoing = this.friendRequests.filter((fr) => fr.senderId === this.currentUserId && fr.status === 'pending');
+      const allUsers = this.users || [];
+      const incoming = (this.friendRequests || [])
+        .filter((fr) => fr && fr.recipientId === this.currentUserId && fr.status === 'pending')
+        .map((fr) => {
+          const sender = allUsers.find((u) => u.id === fr.senderId);
+          return {
+            ...fr,
+            sender: sender
+              ? { id: sender.id, username: sender.username, displayName: sender.displayName, avatar: sender.avatar, phoneNumber: sender.phoneNumber }
+              : fr.sender || null,
+          };
+        });
+      const outgoing = (this.friendRequests || [])
+        .filter((fr) => fr && fr.senderId === this.currentUserId && fr.status === 'pending')
+        .map((fr) => {
+          const recipient = allUsers.find((u) => u.id === fr.recipientId);
+          return {
+            ...fr,
+            recipient: recipient
+              ? { id: recipient.id, username: recipient.username, displayName: recipient.displayName, avatar: recipient.avatar, phoneNumber: recipient.phoneNumber }
+              : null,
+          };
+        });
       return { incoming, outgoing };
     }
 
     if ((cleanPath === '/contacts/requests' || cleanPath === '/contacts/request') && method === 'POST') {
+      let recId = body.recipientId;
+      if (!recId && body.identifier) {
+        const iden = String(body.identifier).trim().toLowerCase();
+        const found = (this.users || []).find(
+          (u) =>
+            u.username.toLowerCase() === iden ||
+            (u.phoneNumber && u.phoneNumber.includes(iden)) ||
+            (u.email && u.email.toLowerCase() === iden)
+        );
+        if (found) recId = found.id;
+      }
+
+      const recipient = (this.users || []).find((u) => u.id === recId);
       const fr = {
         id: 'fr_' + Date.now(),
         senderId: this.currentUserId,
-        recipientId: body.recipientId,
+        recipientId: recId || 'unknown',
         status: 'pending',
         createdAt: new Date().toISOString(),
         sender: this.getCurrentUser(),
+        recipient: recipient
+          ? { id: recipient.id, username: recipient.username, displayName: recipient.displayName, avatar: recipient.avatar, phoneNumber: recipient.phoneNumber }
+          : null,
       };
       this.friendRequests.push(fr);
       this.save();
@@ -346,6 +384,16 @@ export class MockStorageService {
       const fr = this.friendRequests.find((r) => r.id === frId);
       if (fr) {
         fr.status = 'rejected';
+        this.save();
+      }
+      return { success: true };
+    }
+
+    if ((cleanPath.startsWith('/contacts/requests/') || cleanPath.startsWith('/contacts/request/')) && cleanPath.endsWith('/cancel')) {
+      const frId = cleanPath.split('/')[3];
+      const fr = this.friendRequests.find((r) => r.id === frId && r.senderId === this.currentUserId);
+      if (fr) {
+        fr.status = 'cancelled';
         this.save();
       }
       return { success: true };

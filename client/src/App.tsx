@@ -23,6 +23,8 @@ import { BroadcastModal } from './components/groups/BroadcastModal';
 import { StorageSettingsModal } from './components/storage/StorageSettingsModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
 const MainApp: React.FC = () => {
   const { user, loading } = useAuth();
   const { activeConversation, setActiveConversation, startDirectChat } = useChat();
@@ -202,14 +204,16 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ChatProvider>
-        <CallProvider>
-          <SocialProvider>
-            <MainApp />
-          </SocialProvider>
-        </CallProvider>
-      </ChatProvider>
-    </AuthProvider>
+    <ErrorBoundary fallbackTitle="AAM Application Error">
+      <AuthProvider>
+        <ChatProvider>
+          <CallProvider>
+            <SocialProvider>
+              <MainApp />
+            </SocialProvider>
+          </CallProvider>
+        </ChatProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

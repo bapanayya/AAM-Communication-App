@@ -32,10 +32,29 @@ contactRouter.get('/', authMiddleware, (req: AuthRequest, res: Response) => {
 // Send friend request
 contactRouter.post('/requests', authMiddleware, (req: AuthRequest, res: Response) => {
   const currentUserId = req.user!.id;
-  const { recipientId } = req.body;
+  let { recipientId, identifier } = req.body;
+
+  if (!recipientId && identifier) {
+    const ident = String(identifier).trim();
+    const cleanDigits = ident.replace(/\D/g, '');
+    const allUsers = db.getUsers();
+    const foundUser = allUsers.find(
+      (u) =>
+        u.username.toLowerCase() === ident.toLowerCase() ||
+        (u.email && u.email.toLowerCase() === ident.toLowerCase()) ||
+        (u.phoneNumber && (u.phoneNumber === ident || (cleanDigits.length >= 7 && u.phoneNumber.replace(/\D/g, '').endsWith(cleanDigits.slice(-10)))))
+    );
+    if (!foundUser) {
+      res.status(404).json({ error: `User "${ident}" not found in registered accounts.` });
+      return;
+    }
+    recipientId = foundUser.id;
+  }
 
   if (!recipientId || recipientId === currentUserId) {
-    res.status(400).json({ error: 'Valid recipient ID required' });
+    res.status(400).json({
+      error: recipientId === currentUserId ? 'Cannot send friend request to yourself' : 'Valid recipient ID or identifier required',
+    });
     return;
   }
 

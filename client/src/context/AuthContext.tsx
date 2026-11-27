@@ -28,9 +28,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       const storedToken = api.getToken();
       if (storedToken) {
-        // Clear legacy mock tokens so user sees the Initial Sign Up / Sign In page
-        if (storedToken.startsWith('mock_jwt_') && !localStorage.getItem('aam_user_explicitly_authenticated')) {
-          console.log('Clearing legacy mock token to show Initial Sign In / Sign Up page');
+        // Clear legacy mock tokens so user connects to real live cloud backend
+        if (storedToken.startsWith('mock_jwt_')) {
+          console.log('Clearing legacy mock token to connect to real live cloud backend');
           api.setToken(null);
           setToken(null);
           setUser(null);

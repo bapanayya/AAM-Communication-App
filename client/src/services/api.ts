@@ -4,18 +4,55 @@ export const CLOUD_API_BASE = 'https://instantly-resolved-driven-happens.tryclou
 export const DIRECT_IP_API_BASE = 'http://92.4.67.156:5000/api';
 export const LOCAL_API_BASE = 'http://localhost:5000/api';
 
+export function isCapacitorNative(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // 1. Check Capacitor native runtime
+  const cap = (window as any).Capacitor;
+  if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
+    return true;
+  }
+  if (cap && cap.platform && cap.platform !== 'web') {
+    return true;
+  }
+
+  // 2. In Capacitor Android WebView, scheme is https or capacitor and host is localhost
+  if (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:') {
+    return true;
+  }
+  if (window.location.protocol === 'https:' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return true;
+  }
+
+  // 3. User agent check for mobile app WebView
+  const ua = window.navigator.userAgent || '';
+  if (ua.includes('Capacitor') || (ua.includes('Android') && window.location.hostname === 'localhost')) {
+    return true;
+  }
+
+  return false;
+}
+
 export function getApiBase(): string {
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('aam_custom_api_url');
     if (custom) return custom;
 
+    // Mobile APK (Android / iOS) MUST ALWAYS connect to live Oracle Cloud backend
+    if (isCapacitorNative()) {
+      return CLOUD_API_BASE;
+    }
+
     const hostname = window.location.hostname;
-    // If local dev on PC
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Only local PC development over http (e.g. Vite on localhost:5173)
+    if (window.location.protocol === 'http:' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
       if (window.location.port === '5000') {
         return `http://${hostname}:5000/api`;
       }
-      return LOCAL_API_BASE;
+      // If developer explicitly opted into local backend
+      if (localStorage.getItem('aam_use_local_backend') === 'true') {
+        return LOCAL_API_BASE;
+      }
     }
   }
   // Android APK, mobile browser, or GitHub Pages
@@ -70,8 +107,15 @@ class ApiService {
       }
       return data;
     } catch (err: any) {
-      // If unauthorized on auth/me, rethrow directly without triggering fallback
-      if (endpoint === '/auth/me' && err?.message?.toLowerCase().includes('unauthorized')) {
+      // Critical endpoints must NOT silently swallow failure into mock storage
+      const isCriticalAuthEndpoint =
+        endpoint.startsWith('/auth/register') ||
+        endpoint.startsWith('/auth/login') ||
+        endpoint.startsWith('/auth/send-otp') ||
+        endpoint.startsWith('/auth/verify-otp') ||
+        (endpoint === '/auth/me' && err?.message?.toLowerCase().includes('unauthorized'));
+
+      if (isCriticalAuthEndpoint) {
         throw err;
       }
 
@@ -192,10 +236,11 @@ class ApiService {
     return this.request<{ contacts: any[] }>('/contacts');
   }
 
-  public async sendFriendRequest(recipientId: string) {
+  public async sendFriendRequest(target: string) {
+    const isUserId = target.startsWith('usr_');
     return this.request<{ request: any }>('/contacts/requests', {
       method: 'POST',
-      body: JSON.stringify({ recipientId }),
+      body: JSON.stringify(isUserId ? { recipientId: target } : { identifier: target }),
     });
   }
 
