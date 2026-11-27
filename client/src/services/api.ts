@@ -211,6 +211,15 @@ class ApiService {
     return this.request<{ users: any[] }>(`/users/search?q=${encodeURIComponent(q)}`);
   }
 
+  public async getOnlineUserIds(): Promise<string[]> {
+    try {
+      const res = await this.request<{ onlineUserIds: string[] }>('/users/presence');
+      return res.onlineUserIds || [];
+    } catch {
+      return [];
+    }
+  }
+
   public async getUser(id: string) {
     return this.request<{ user: any }>(`/users/${id}`);
   }

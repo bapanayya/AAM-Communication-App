@@ -60,6 +60,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Listen to WebSocket presence
   useEffect(() => {
+    // Fetch initial presence via API as well
+    api.getOnlineUserIds().then((ids) => {
+      if (ids && ids.length > 0) {
+        setOnlineUserIds((prev) => Array.from(new Set([...prev, ...ids])));
+      }
+    });
+
     const unsubConnected = socket.on('connected', (data: { userId: string; onlineUserIds: string[] }) => {
       setOnlineUserIds(data.onlineUserIds || []);
     });
@@ -74,9 +81,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     });
 
+    // Also sync presence periodically every 10 seconds
+    const interval = setInterval(() => {
+      api.getOnlineUserIds().then((ids) => {
+        if (ids && ids.length > 0) {
+          setOnlineUserIds(ids);
+        }
+      });
+    }, 10000);
+
     return () => {
       unsubConnected();
       unsubPresence();
+      clearInterval(interval);
     };
   }, []);
 

@@ -3,8 +3,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/storage';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { BlockedUser } from '../types';
+import { getWebSocketGateway } from '../websocket/gateway';
 
 export const userRouter = Router();
+
+// Get real-time online presence status for all active users
+userRouter.get('/presence', authMiddleware, (req: AuthRequest, res: Response) => {
+  const gw = getWebSocketGateway();
+  res.json({ onlineUserIds: gw ? gw.getOnlineUserIds() : [] });
+});
 
 // Search users by username, phone, email, or displayName (or return all registered users if empty)
 userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {

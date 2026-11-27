@@ -100,10 +100,27 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (activeConversation) {
       loadMessages(activeConversation.id);
+
+      // Active chat live synchronization poll (every 4s) to guarantee zero message delay on mobile WebViews
+      const pollTimer = setInterval(() => {
+        loadMessages(activeConversation.id);
+        loadConversations();
+      }, 4000);
+
+      const handleFocus = () => {
+        loadMessages(activeConversation.id);
+        loadConversations();
+      };
+      window.addEventListener('focus', handleFocus);
+
+      return () => {
+        clearInterval(pollTimer);
+        window.removeEventListener('focus', handleFocus);
+      };
     } else {
       setMessages([]);
     }
-  }, [activeConversation, loadMessages]);
+  }, [activeConversation, loadMessages, loadConversations]);
 
   // WebSocket event subscriptions
   useEffect(() => {

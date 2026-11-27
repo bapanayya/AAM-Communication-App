@@ -115,13 +115,6 @@ export class WebSocketGateway {
   }
 
   private broadcastPresence(userId: string, isOnline: boolean) {
-    // Notify all accepted contacts of this user
-    const contacts = db.getContacts().filter((c) => c.userId === userId || c.contactUserId === userId);
-    const targetUserIds = new Set<string>();
-    contacts.forEach((c) => {
-      targetUserIds.add(c.userId === userId ? c.contactUserId : c.userId);
-    });
-
     const payload = JSON.stringify({
       event: 'presence.update',
       data: {
@@ -131,15 +124,45 @@ export class WebSocketGateway {
       },
     });
 
-    targetUserIds.forEach((targetId) => {
-      this.sendToUser(targetId, payload);
+    // Broadcast presence update to ALL active sockets across the entire system
+    this.wss.clients.forEach((client: AuthenticatedSocket) => {
+      if (client.readyState === WebSocket.OPEN && client.userId !== userId) {
+        client.send(payload);
+      }
     });
   }
 
   private checkPendingTransfersForUser(recipientId: string) {
-    const transfers = db.getPendingTransfers().filter((t) => t.recipientId === recipientId && t.status === 'queued');
+    const now = new Date().toISOString();
+    // 1. Deliver any pending transfers
+    const transfers = db.getPendingTransfers().filter(
+      (t) => t.recipientId === recipientId && (t.status === 'queued' || t.status === 'transferring')
+    );
     transfers.forEach((t) => {
-      // Notify sender that recipient is now online so sender client can automatically push/transfer!
+      t.status = 'completed';
+      const msg = db.getMessages().find((m) => m.id === t.messageId);
+      if (msg) {
+        msg.deliveryState = 'delivered';
+        msg.deliveredAt = now;
+        this.sendToUser(
+          recipientId,
+          JSON.stringify({
+            event: 'message.new',
+            data: { message: msg },
+          })
+        );
+      }
+      this.sendToUser(
+        t.senderId,
+        JSON.stringify({
+          event: 'message.delivered',
+          data: {
+            messageId: t.messageId,
+            readBy: recipientId,
+            timestamp: now,
+          },
+        })
+      );
       this.sendToUser(
         t.senderId,
         JSON.stringify({
@@ -152,6 +175,39 @@ export class WebSocketGateway {
         })
       );
     });
+
+    // 2. Deliver any sent/pending messages queued for this recipient
+    const undeliveredMsgs = db.getMessages().filter(
+      (m) => m.recipientId === recipientId && (m.deliveryState === 'sent' || m.deliveryState === 'pending')
+    );
+    undeliveredMsgs.forEach((msg) => {
+      msg.deliveryState = 'delivered';
+      msg.deliveredAt = now;
+      this.sendToUser(
+        recipientId,
+        JSON.stringify({
+          event: 'message.new',
+          data: { message: msg },
+        })
+      );
+      if (msg.senderId) {
+        this.sendToUser(
+          msg.senderId,
+          JSON.stringify({
+            event: 'message.delivered',
+            data: {
+              messageId: msg.id,
+              readBy: recipientId,
+              timestamp: now,
+            },
+          })
+        );
+      }
+    });
+
+    if (transfers.length > 0 || undeliveredMsgs.length > 0) {
+      db.save();
+    }
   }
 
   private handleMessage(ws: AuthenticatedSocket, message: { event: string; data: any }) {
@@ -329,6 +385,11 @@ export class WebSocketGateway {
         break;
       }
 
+      case 'ping': {
+        ws.send(JSON.stringify({ event: 'pong', data: { timestamp: Date.now() } }));
+        break;
+      }
+
       default:
         console.log('Unhandled WS event:', event);
     }
@@ -347,5 +408,15 @@ export class WebSocketGateway {
 
   public isUserOnline(userId: string): boolean {
     return this.clients.has(userId) && (this.clients.get(userId)?.size || 0) > 0;
+  }
+
+  public getOnlineUserIds(): string[] {
+    const activeIds: string[] = [];
+    this.clients.forEach((sockets, uid) => {
+      if (sockets && sockets.size > 0) {
+        activeIds.push(uid);
+      }
+    });
+    return activeIds;
   }
 }

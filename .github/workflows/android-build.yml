@@ -115,23 +115,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: v1.1.0
-          name: "AAM — All in One Communication App v1.1.0 (Live Multi-User Release)"
+          tag_name: v1.1.1
+          name: "AAM — All in One Communication App v1.1.1 (Instant Messaging & New Logo Release)"
           fail_on_unmatched_files: true
           body: |
-            ### 🕉️ AAM: All in One Communication App (v1.1.0)
+            ### 🕉️ AAM: All in One Communication App (v1.1.1)
             *Proudly Make in India 🇮🇳 | Target SDK 36 Compliant (Android 14/15/16)*
 
-            #### 🌟 Highlights & Capabilities:
-            - **All in One Communication**: Chat, encrypted audio & video calls, 24h status updates, media sharing, and channel broadcasts in one sovereign platform.
-            - **Live Real-Time Multi-User Connectivity**: Real users can register their own accounts and interact live across separate mobile phones and browsers.
-            - **Initial Sign Up & Sign In**: Sovereign user onboarding with phone (+91), email, username, and password.
-            - **Profile Photo Editor**: Instant camera/gallery upload, modern avatar presets, and custom avatar URL support.
-            - **Clean Multi-Device Testing**: Zero mock data—ready for real team testing on Android phones and web browsers.
-            - **Dedicated 24h Status Tab**: Ephemeral photo and gradient text stories with contact updates right next to Chats (Tab 2).
-            - **Single-Instance Storage (CAS Deduplication)**: Content-addressable storage saving device storage when forwarding media to multiple contacts.
-            - **3 User-Selectable Storage Modes**: Local Device, Local + Encrypted Cloud Backup, and Real-Time Cloud Sync.
-            - **Encrypted WebRTC Audio & Video Calling**: Ultra-low battery consumption, mono speech optimization (Opus 48kHz), and zero call recording.
+            #### 🌟 What's New in v1.1.1:
+            - **Instant Real-Time Message Delivery**: Fixed false offline detection and eliminates message queuing delays. Direct messages are delivered in milliseconds with real-time double checkmarks.
+            - **Global Presence Synchronization**: Accurate live online/offline indicator for all users across devices via WebSocket and periodic heartbeat.
+            - **Official AAM App Logo**: Updated brand identity with `AAM-Logo.jpeg` across all Android launcher densities (mdpi through xxxhdpi) and web app icons.
+            - **Smooth Bottom Navigation Scrolling**: Fully isolated horizontal gesture scrolling on the bottom navigation bar (`touch-action: pan-x; overscroll-behavior: contain`), eliminating sluggishness and viewport dragging.
+            - **Zero Pending Queue Latency**: Removed local queuing for text messages; all conversations sync automatically in real time.
+            - **Mandatory Mobile & Email Verification**: 2-step OTP verification gate for secure account registration.
 
             #### 📦 Downloads:
             - **`AAM.apk`**: Direct installation file for any Android phone (Android 7.0+ / SDK 24–36).

@@ -258,7 +258,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
   }
 
   const isLocalMode = user?.storageMode === 'local_device';
-  const showOfflineWarning = isLocalMode && !isRecipientOnline && activeConversation.type === 'direct';
+  const hasPendingTransfersForRecipient = (pendingTransfers || []).some(
+    (t) => t.recipientId === otherUserId && (t.status === 'queued' || t.status === 'transferring')
+  );
+  const showOfflineWarning = isLocalMode && !isRecipientOnline && hasPendingTransfersForRecipient && activeConversation.type === 'direct';
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden relative">
@@ -297,7 +300,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
               {isTyping ? (
                 <span className="text-amber-400 font-medium animate-pulse">Typing...</span>
               ) : activeConversation.type === 'direct' ? (
-                <span>{isRecipientOnline ? 'Online now' : 'Offline (Peer Storage Active)'}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isRecipientOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                  <span className={isRecipientOnline ? 'text-emerald-400 font-medium' : 'text-slate-400'}>
+                    {isRecipientOnline ? 'Online' : 'Offline'}
+                  </span>
+                </span>
               ) : (
                 <span>{activeConversation.memberIds.length} members</span>
               )}

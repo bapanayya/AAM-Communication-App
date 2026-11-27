@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/storage';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { Message, PendingTransfer, MessageContentType, Conversation, MediaRecord } from '../types';
+import { getWebSocketGateway } from '../websocket/gateway';
 
 export const messageRouter = Router();
 
@@ -153,12 +154,19 @@ messageRouter.post('/conversations/:id/messages', authMiddleware, (req: AuthRequ
     effectiveMediaHash = `cas_sha256_${uuidv4().replace(/-/g, '').substring(0, 16)}`;
   }
 
-  // Determine initial delivery state based on Storage Mode & Recipient Presence
+  const gw = getWebSocketGateway();
+  const recipientOnlineOnServer = otherMemberId && gw ? gw.isUserOnline(otherMemberId) : false;
+  const isEffectiveRecipientOnline = isRecipientOnline === true || recipientOnlineOnServer;
+
+  // Real-time delivery logic:
+  // Text messages and standard media are NEVER stuck in pending!
+  // If recipient is connected to the server right now: mark 'delivered'.
+  // If recipient is offline: mark 'sent' (single tick). It will automatically flip to 'delivered' as soon as recipient connects!
   let deliveryState: 'pending' | 'sent' | 'delivered' = 'sent';
-  if (currentUser.storageMode === 'local_device' && otherMemberId && isRecipientOnline === false) {
-    deliveryState = 'pending';
-  } else if (isRecipientOnline === true) {
+  if (isEffectiveRecipientOnline) {
     deliveryState = 'delivered';
+  } else {
+    deliveryState = 'sent';
   }
 
   const newMessage: Message = {
@@ -213,25 +221,46 @@ messageRouter.post('/conversations/:id/messages', authMiddleware, (req: AuthRequ
     newMessage.connectedConversationCount = rec.referencedConversationIds.length;
   }
 
-  // If pending in local mode or media transfer, add to Pending Transfers queue
-  if (deliveryState === 'pending' && otherMemberId) {
-    const transfer: PendingTransfer = {
-      id: `pt_${uuidv4().substring(0, 8)}`,
-      messageId: newMessage.id,
-      senderId: currentUserId,
-      recipientId: otherMemberId,
-      contentType: newMessage.contentType,
-      mediaName: newMessage.mediaName || (newMessage.contentType === 'text' ? 'Encrypted Text' : 'Media file'),
-      fileSize: newMessage.mediaSize || 1024,
-      previewUrl: newMessage.mediaUrl,
-      status: 'queued',
-      createdAt: now,
-      lastAttemptAt: now,
-    };
-    db.getPendingTransfers().push(transfer);
-  }
-
   db.save();
+
+  // Broadcast immediately via WebSocket to recipient(s)!
+  if (gw) {
+    if (otherMemberId) {
+      gw.sendToUser(
+        otherMemberId,
+        JSON.stringify({
+          event: 'message.new',
+          data: { message: newMessage },
+        })
+      );
+      if (deliveryState === 'delivered') {
+        gw.sendToUser(
+          currentUserId,
+          JSON.stringify({
+            event: 'message.delivered',
+            data: {
+              messageId: newMessage.id,
+              readBy: otherMemberId,
+              timestamp: now,
+            },
+          })
+        );
+      }
+    } else {
+      // Group chat
+      conversation.memberIds.forEach((mId) => {
+        if (mId !== currentUserId) {
+          gw.sendToUser(
+            mId,
+            JSON.stringify({
+              event: 'message.new',
+              data: { message: newMessage },
+            })
+          );
+        }
+      });
+    }
+  }
 
   res.status(201).json({ message: newMessage });
 });
