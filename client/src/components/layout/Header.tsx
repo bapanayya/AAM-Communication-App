@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, HardDrive, Smartphone, Monitor, ChevronDown, Check, UserCircle } from 'lucide-react';
+import { Shield, Sparkles, HardDrive, Smartphone, Monitor, ChevronDown, Check, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { StorageMode } from '../../types';
 
@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onOpenStorage }) => {
-  const { user, demoLogin } = useAuth();
+  const { user, demoLogin, logout } = useAuth();
   const [showDemoDropdown, setShowDemoDropdown] = useState(false);
 
   const demoAccounts = [
@@ -129,6 +129,19 @@ export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onO
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="pt-1.5 mt-1.5 border-t border-slate-800">
+                <button
+                  onClick={() => {
+                    logout();
+                    setShowDemoDropdown(false);
+                  }}
+                  className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg text-left text-xs text-rose-400 hover:bg-rose-500/10 transition"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out / Switch Account</span>
+                </button>
               </div>
             </div>
           )}

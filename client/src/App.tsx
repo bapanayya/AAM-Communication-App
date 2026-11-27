@@ -10,6 +10,8 @@ import { ChatWindow } from './components/chat/ChatWindow';
 import { CallHistoryTab } from './components/calling/CallHistoryTab';
 import { DailyFeedReels } from './components/feed/DailyFeedReels';
 import { AdsSpaceReels } from './components/ads/AdsSpaceReels';
+import { StatusTab } from './components/status/StatusTab';
+import { AuthScreen } from './components/auth/AuthScreen';
 import { ActiveCallModal } from './components/calling/ActiveCallModal';
 import { IncomingCallModal } from './components/calling/IncomingCallModal';
 import { PendingTransfersModal } from './components/chat/PendingTransfersModal';
@@ -22,7 +24,7 @@ import { StorageSettingsModal } from './components/storage/StorageSettingsModal'
 import { SettingsModal } from './components/settings/SettingsModal';
 
 const MainApp: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { activeConversation, setActiveConversation, startDirectChat } = useChat();
 
   const [currentTab, setCurrentTab] = useState<NavTab>('chats');
@@ -52,12 +54,25 @@ const MainApp: React.FC = () => {
       setShowStorageModal(true);
     } else if (tab === 'settings') {
       setShowSettingsModal(true);
-    } else if (tab === 'status') {
-      setActiveStoryGroupIndex(0);
     } else {
       setCurrentTab(tab);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100 font-sans">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl animate-pulse">
+          🕉️
+        </div>
+        <p className="mt-4 text-xs font-semibold tracking-wider text-amber-400">LOADING AAM SOVEREIGN PLATFORM...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
 
   return (
     <div className={`min-h-screen bg-slate-950 flex flex-col items-center justify-center font-sans ${isMobileSim ? 'p-4 sm:p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40' : ''}`}>
@@ -113,6 +128,12 @@ const MainApp: React.FC = () => {
             )}
 
             {currentTab === 'calls' && <CallHistoryTab />}
+            {currentTab === 'status' && (
+              <StatusTab
+                onOpenStatusViewer={(idx) => setActiveStoryGroupIndex(idx)}
+                onOpenStatusCreator={() => setShowStoryCreator(true)}
+              />
+            )}
             {currentTab === 'feed' && <DailyFeedReels onOpenChatWithUser={handleOpenDirectChat} />}
             {currentTab === 'ads' && <AdsSpaceReels onOpenChatWithUser={handleOpenDirectChat} />}
           </main>

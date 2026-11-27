@@ -38,16 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(null);
         }
       } else {
-        // Automatically log into default demo account (Aarav Sharma) if no session exists!
-        try {
-          const res = await api.demoLogin('usr_aarav');
-          api.setToken(res.token);
-          setToken(res.token);
-          setUser(res.user);
-          socket.connect(res.token);
-        } catch (e) {
-          console.warn('Could not auto-login demo:', e);
-        }
+        // No stored token: show Initial Sign Up / Sign In Page
+        setUser(null);
       }
       setLoading(false);
     };
