@@ -236,7 +236,7 @@ export class MockStorageService {
       );
 
       const matchedUsers = this.users
-        .filter((u) => u.id !== this.currentUserId)
+        .filter((u) => !q ? u.id !== this.currentUserId : true)
         .filter((u) => {
           if (!q) return true;
           const matchU = u.username.toLowerCase().includes(q);
@@ -247,6 +247,7 @@ export class MockStorageService {
           return matchU || matchD || matchE || matchP || matchPD;
         })
         .map((u) => {
+          const isSelf = u.id === this.currentUserId;
           const isFriend = acceptedIds.includes(u.id);
           const pr = pendingReqs.find((r) => r.senderId === u.id || r.recipientId === u.id);
           let friendRequestStatus: 'incoming' | 'outgoing' | 'none' = 'none';
@@ -255,6 +256,7 @@ export class MockStorageService {
           }
           return {
             ...u,
+            isSelf,
             isFriend,
             friendRequestStatus,
             friendRequestId: pr?.id,

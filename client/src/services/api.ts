@@ -70,8 +70,14 @@ class ApiService {
       }
       return data;
     } catch (err: any) {
-      // If primary endpoint failed, attempt fallback direct IP before local store
-      if (apiBase !== DIRECT_IP_API_BASE && apiBase !== LOCAL_API_BASE) {
+      // If unauthorized on auth/me, rethrow directly without triggering fallback
+      if (endpoint === '/auth/me' && err?.message?.toLowerCase().includes('unauthorized')) {
+        throw err;
+      }
+
+      // If page is served over HTTPS, do not attempt insecure http:// IP fallback (browsers block mixed content)
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      if (!isHttps && apiBase !== DIRECT_IP_API_BASE && apiBase !== LOCAL_API_BASE) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 6000);

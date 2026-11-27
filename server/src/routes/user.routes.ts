@@ -37,6 +37,8 @@ userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
       friendRequestId = pendingReq.id;
     }
 
+    const isSelf = u.id === currentUserId;
+
     return {
       id: u.id,
       username: u.username,
@@ -46,6 +48,7 @@ userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
       avatar: u.avatar,
       bio: u.bio,
       storageMode: u.storageMode,
+      isSelf,
       isFriend,
       friendRequestStatus,
       friendRequestId,
@@ -53,7 +56,7 @@ userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
     };
   };
 
-  // If query is empty, return all registered discoverable users
+  // If query is empty, return all registered discoverable users (other than current user)
   if (!q) {
     const discoverable = db
       .getUsers()
@@ -63,9 +66,10 @@ userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
     return;
   }
 
+  // When searching with a query, search across all users (including current user with isSelf: true for confirmation)
   const results = db
     .getUsers()
-    .filter((u) => u.id !== currentUserId && !blockedIds.includes(u.id))
+    .filter((u) => !blockedIds.includes(u.id))
     .filter((u) => {
       const matchUsername = u.username.toLowerCase().includes(q);
       const matchDisplayName = u.displayName.toLowerCase().includes(q);

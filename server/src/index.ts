@@ -28,6 +28,14 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    console.log(`[HTTP ${res.statusCode}] ${req.method} ${req.originalUrl} (${Date.now() - start}ms)`);
+  });
+  next();
+});
+
 // Mount API routes
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
