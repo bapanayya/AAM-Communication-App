@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -36,13 +36,6 @@ jobs:
           npm run build
           cd ..
 
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v4
-        continue-on-error: true
-        with:
-          enablement: true
-
       - name: Prepare Static Site Artifact
         run: |
           mkdir -p site/downloads
@@ -53,32 +46,18 @@ jobs:
           cp -r assets site/ 2>/dev/null || true
           touch site/.nojekyll
           # Fetch latest release APKs if available
-          curl -L -f -s -o site/downloads/AAM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AAM.apk || true
-          curl -L -f -s -o site/downloads/AUM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AUM.apk || true
+          curl -L -f -s -o site/downloads/AAM.apk https://github.com/bapanayya/AAM-Communication-App/releases/latest/download/AAM.apk || curl -L -f -s -o site/downloads/AAM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AAM.apk || true
+          curl -L -f -s -o site/downloads/AUM.apk https://github.com/bapanayya/AAM-Communication-App/releases/latest/download/AUM.apk || curl -L -f -s -o site/downloads/AUM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AUM.apk || true
 
-      - name: Deploy to gh-pages branch (Dual-Mode Fallback)
+      - name: Deploy to gh-pages Branch
         uses: peaceiris/actions-gh-pages@v4
-        continue-on-error: true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           force_orphan: true
 
-      - name: Upload Pages Artifact
+      - name: Upload Pages Artifact (for GitHub Actions Pages source)
         uses: actions/upload-pages-artifact@v3
         continue-on-error: true
         with:
           path: './site'
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    continue-on-error: true
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        continue-on-error: true

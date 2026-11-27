@@ -99,6 +99,7 @@ const MainApp: React.FC = () => {
           isMobileSim={isMobileSim}
           setIsMobileSim={setIsMobileSim}
           onOpenStorage={() => setShowStorageModal(true)}
+          onOpenSettings={() => setShowSettingsModal(true)}
         />
 
         {/* Main Body with Sidebar/Navigation */}

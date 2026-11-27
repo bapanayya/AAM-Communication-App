@@ -44,8 +44,8 @@ app.use('/api/ads', adRouter);
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'online',
-    app: 'AUM Privacy-First Messaging & Social Media',
-    version: '1.0.0-make-in-india',
+    app: 'AAM — All in One Communication App',
+    version: '1.1.0-make-in-india',
     timestamp: new Date().toISOString(),
   });
 });
@@ -65,7 +65,7 @@ export const wsGateway = new WebSocketGateway(server);
 
 server.listen(PORT, () => {
   console.log(`=======================================================`);
-  console.log(`🕉️  AUM Full-Stack Messaging & Social Media Server`);
+  console.log(`🕉️  AAM — All in One Communication App Server`);
   console.log(`🇮🇳  Proudly Made in India | Sovereign Privacy Architecture`);
   console.log(`🚀  Application Web UI: http://localhost:${PORT}`);
   console.log(`⚡  API Endpoint:       http://localhost:${PORT}/api`);

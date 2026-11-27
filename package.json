@@ -1,7 +1,7 @@
 {
-  "name": "aam-messaging-app",
-  "version": "1.0.0",
-  "description": "AAM: Sovereign Messaging, Audio & Video Calling, Ads Broadcasting (Web, Android & PWA)",
+  "name": "aam-communication-app",
+  "version": "1.1.0",
+  "description": "AAM — All in One Communication App: Sovereign Messaging, Audio & Video Calling, 24h Status Stories, and Ads Broadcasting",
   "main": "client/dist/index.html",
   "scripts": {
     "build:web": "cd client && npm run build",

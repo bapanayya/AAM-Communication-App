@@ -116,18 +116,21 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: v1.1.0
-          name: "AAM Sovereign Android App v1.1.0 (Live Multi-User Release)"
+          name: "AAM — All in One Communication App v1.1.0 (Live Multi-User Release)"
           fail_on_unmatched_files: true
           body: |
-            ### 🕉️ AAM: Sovereign Privacy-First Messaging, Video Calling & Social Platform (v1.1.0)
+            ### 🕉️ AAM: All in One Communication App (v1.1.0)
             *Proudly Make in India 🇮🇳 | Target SDK 36 Compliant (Android 14/15/16)*
 
-            #### 🌟 Highlights & New Capabilities:
+            #### 🌟 Highlights & Capabilities:
+            - **All in One Communication**: Chat, encrypted audio & video calls, 24h status updates, media sharing, and channel broadcasts in one sovereign platform.
             - **Live Real-Time Multi-User Connectivity**: Real users can register their own accounts and interact live across separate mobile phones and browsers.
-            - **Initial Sign In & Sign Up Screen**: Complete user onboarding with phone (+91), email, username, and password, plus 1-click demo profiles.
+            - **Initial Sign Up & Sign In**: Sovereign user onboarding with phone (+91), email, username, and password.
+            - **Profile Photo Editor**: Instant camera/gallery upload, modern avatar presets, and custom avatar URL support.
+            - **Clean Multi-Device Testing**: Zero mock data—ready for real team testing on Android phones and web browsers.
             - **Dedicated 24h Status Tab**: Ephemeral photo and gradient text stories with contact updates right next to Chats (Tab 2).
             - **Single-Instance Storage (CAS Deduplication)**: Content-addressable storage saving device storage when forwarding media to multiple contacts.
-            - **3 User-Selectable Storage Modes**: Local Device (free), Local + Encrypted Cloud Backup, and Real-Time Cloud Sync.
+            - **3 User-Selectable Storage Modes**: Local Device, Local + Encrypted Cloud Backup, and Real-Time Cloud Sync.
             - **Encrypted WebRTC Audio & Video Calling**: Ultra-low battery consumption, mono speech optimization (Opus 48kHz), and zero call recording.
 
             #### 📦 Downloads:

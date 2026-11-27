@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Users, Radio, Check, CheckCheck, Clock, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Users, Radio, Check, CheckCheck, Clock, ShieldCheck, MessageSquare } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
 import { useSocial } from '../../context/SocialContext';
@@ -153,9 +153,20 @@ export const ChatList: React.FC<ChatListProps> = ({
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto divide-y divide-slate-800/40">
         {filteredConversations.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-xs">
-            <p>No conversations found.</p>
-            <p className="mt-1">Click the + icon to message an accepted contact!</p>
+          <div className="p-8 text-center text-slate-500 text-xs flex flex-col items-center justify-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
+              <MessageSquare className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-slate-300">No conversations yet</p>
+              <p className="mt-1 text-slate-500 text-[11px]">Tap below to search team contacts or start a conversation!</p>
+            </div>
+            <button
+              onClick={onOpenNewChat}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold transition"
+            >
+              + Search Contacts
+            </button>
           </div>
         ) : (
           filteredConversations.map((conv) => {

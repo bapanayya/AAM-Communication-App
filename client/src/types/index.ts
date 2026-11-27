@@ -12,6 +12,7 @@ export interface User {
   publicKey?: string;
   deviceId?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface UserSettings {

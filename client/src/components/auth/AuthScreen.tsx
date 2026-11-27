@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { StorageMode } from '../../types';
 
 export const AuthScreen: React.FC = () => {
-  const { login, register, demoLogin } = useAuth();
+  const { login, register } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
@@ -94,19 +94,6 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleQuickDemo = async (userId: string) => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      await demoLogin(userId);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMessage('Failed to load demo profile.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen w-full bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-100 font-sans relative overflow-hidden">
       {/* Background Neon Orbs */}
@@ -129,8 +116,8 @@ export const AuthScreen: React.FC = () => {
             </span>
           </div>
 
-          <p className="text-xs text-slate-400 mt-1">
-            Sovereign E2EE Messaging • HD Calling • Ads Broadcasting
+          <p className="text-xs text-amber-300/90 font-medium mt-1">
+            All in One Communication App
           </p>
         </div>
 
@@ -226,39 +213,6 @@ export const AuthScreen: React.FC = () => {
               <span>{loading ? 'Authenticating...' : 'Sign In to AAM'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-
-            {/* Quick 1-Click Demo Profiles */}
-            <div className="pt-4 border-t border-slate-800/80">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 text-center">
-                Or explore via instant demo profile:
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('usr_aarav')}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-left transition group"
-                >
-                  <p className="text-[11px] font-semibold text-amber-300 truncate">Aarav S.</p>
-                  <p className="text-[9px] text-slate-500">Local Storage</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('usr_priya')}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-left transition group"
-                >
-                  <p className="text-[11px] font-semibold text-amber-300 truncate">Priya P.</p>
-                  <p className="text-[9px] text-slate-500">Local Backup</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('usr_vikram')}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/50 text-left transition group"
-                >
-                  <p className="text-[11px] font-semibold text-amber-300 truncate">Vikram M.</p>
-                  <p className="text-[9px] text-slate-500">Cloud Sync</p>
-                </button>
-              </div>
-            </div>
           </form>
         ) : (
           /* SIGN UP FORM */

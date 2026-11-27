@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, HardDrive, Smartphone, Monitor, ChevronDown, Check, UserCircle, LogOut } from 'lucide-react';
+import { Shield, HardDrive, Smartphone, Monitor, ChevronDown, UserCircle, LogOut, Camera, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { StorageMode } from '../../types';
 
@@ -7,18 +7,12 @@ interface HeaderProps {
   isMobileSim: boolean;
   setIsMobileSim: (val: boolean) => void;
   onOpenStorage: () => void;
+  onOpenSettings?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onOpenStorage }) => {
-  const { user, demoLogin, logout } = useAuth();
-  const [showDemoDropdown, setShowDemoDropdown] = useState(false);
-
-  const demoAccounts = [
-    { id: 'usr_aarav', name: 'Aarav Sharma', role: 'Architect (Local Storage)' },
-    { id: 'usr_priya', name: 'Priya Patel', role: 'Designer (Cloud Backup)' },
-    { id: 'usr_vikram', name: 'Vikram Malhotra', role: 'Researcher (Cloud Sync)' },
-    { id: 'usr_ananya', name: 'Ananya Iyer', role: 'Vocalist (New Contact)' },
-  ];
+export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onOpenStorage, onOpenSettings }) => {
+  const { user, logout } = useAuth();
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const getStorageBadge = (mode?: StorageMode) => {
     switch (mode) {
@@ -50,8 +44,8 @@ export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onO
               <span>🇮🇳</span> Make in India
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 flex items-center gap-1">
-            <Shield className="w-3 h-3 text-emerald-400 inline" /> Sovereign E2EE Messaging
+          <p className="text-[11px] text-amber-300/90 font-medium flex items-center gap-1">
+            <Shield className="w-3 h-3 text-emerald-400 inline" /> All in One Communication App
           </p>
         </div>
       </div>
@@ -69,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onO
         </button>
       </div>
 
-      {/* Right: Phone Simulator Toggle, Demo Switcher, and User Profile */}
+      {/* Right: Phone Simulator Toggle and User Profile */}
       <div className="flex items-center space-x-3">
         {/* Mobile View Toggle */}
         <button
@@ -85,63 +79,89 @@ export const Header: React.FC<HeaderProps> = ({ isMobileSim, setIsMobileSim, onO
           <span>{isMobileSim ? 'Phone View' : 'Wide Desktop'}</span>
         </button>
 
-        {/* Quick Demo Account Switcher */}
+        {/* User Profile Menu */}
         <div className="relative">
           <button
-            onClick={() => setShowDemoDropdown(!showDemoDropdown)}
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
             className="flex items-center space-x-2 bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700 px-2.5 py-1.5 rounded-xl transition text-xs"
           >
-            <img
-              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-              alt={user?.displayName}
-              className="w-6 h-6 rounded-full object-cover ring-1 ring-amber-500/50"
-            />
-            <span className="font-medium hidden sm:inline max-w-[100px] truncate">{user?.displayName}</span>
+            <div className="relative">
+              <img
+                src={user?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=aam_user'}
+                alt={user?.displayName || 'User'}
+                className="w-6 h-6 rounded-full object-cover ring-1 ring-amber-500/50"
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-slate-900" />
+            </div>
+            <span className="font-medium hidden sm:inline max-w-[100px] truncate">{user?.displayName || 'User'}</span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
-          {showDemoDropdown && (
-            <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50">
-              <div className="text-[11px] font-semibold text-slate-400 px-2 py-1 uppercase tracking-wider">
-                Switch Perspective (Demo)
-              </div>
-              <div className="space-y-1">
-                {demoAccounts.map((acc) => {
-                  const isActive = user?.id === acc.id;
-                  return (
-                    <button
-                      key={acc.id}
-                      onClick={() => {
-                        demoLogin(acc.id);
-                        setShowDemoDropdown(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition ${
-                        isActive
-                          ? 'bg-amber-500/20 text-amber-300 font-semibold'
-                          : 'text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      <div>
-                        <div>{acc.name}</div>
-                        <div className="text-[10px] text-slate-500">{acc.role}</div>
-                      </div>
-                      {isActive && <Check className="w-4 h-4 text-amber-400" />}
-                    </button>
-                  );
-                })}
+          {showProfileDropdown && (
+            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95">
+              {/* Profile Card */}
+              <div className="flex items-center space-x-3 pb-3 border-b border-slate-800">
+                <div className="relative group cursor-pointer" onClick={() => { setShowProfileDropdown(false); onOpenSettings?.(); }}>
+                  <img
+                    src={user?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=aam_user'}
+                    alt={user?.displayName || 'User'}
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-500/60"
+                  />
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                    <Camera className="w-4 h-4 text-amber-300" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-slate-100 text-sm truncate">{user?.displayName}</div>
+                  <div className="text-[11px] text-amber-400/90 truncate">@{user?.username}</div>
+                  {user?.phoneNumber && (
+                    <div className="text-[10px] text-slate-400 truncate">{user.phoneNumber}</div>
+                  )}
+                </div>
               </div>
 
-              <div className="pt-1.5 mt-1.5 border-t border-slate-800">
+              {/* Storage Mode indicator */}
+              <div className="py-2.5 px-2 my-2 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] flex items-center justify-between">
+                <span className="text-slate-400">Storage Mode:</span>
+                <span className="font-semibold text-amber-400">{badge.label}</span>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-1">
                 <button
                   onClick={() => {
-                    logout();
-                    setShowDemoDropdown(false);
+                    setShowProfileDropdown(false);
+                    onOpenSettings?.();
                   }}
-                  className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg text-left text-xs text-rose-400 hover:bg-rose-500/10 transition"
+                  className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-left text-xs text-slate-200 hover:bg-slate-800 transition"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out / Switch Account</span>
+                  <Camera className="w-4 h-4 text-amber-400" />
+                  <span>Edit Profile & Photo</span>
                 </button>
+
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    onOpenStorage();
+                  }}
+                  className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-left text-xs text-slate-200 hover:bg-slate-800 transition"
+                >
+                  <HardDrive className="w-4 h-4 text-blue-400" />
+                  <span>Storage Settings</span>
+                </button>
+
+                <div className="pt-1 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      logout();
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full flex items-center space-x-2 px-3 py-2 rounded-xl text-left text-xs text-rose-400 hover:bg-rose-500/10 transition font-semibold"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
