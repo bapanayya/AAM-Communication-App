@@ -13,6 +13,20 @@ userRouter.get('/presence', authMiddleware, (req: AuthRequest, res: Response) =>
   res.json({ onlineUserIds: gw ? gw.getOnlineUserIds() : [] });
 });
 
+// Report device internet connectivity heartbeat (even if app is in background or screen is locked)
+userRouter.post('/heartbeat', authMiddleware, (req: AuthRequest, res: Response) => {
+  const currentUserId = req.user!.id;
+  const gw = getWebSocketGateway();
+  if (gw) {
+    gw.touchConnectivity(currentUserId);
+  }
+  res.json({
+    isOnline: true,
+    onlineUserIds: gw ? gw.getOnlineUserIds() : [currentUserId],
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Search users by username, phone, email, or displayName (or return all registered users if empty)
 userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
   const currentUserId = req.user!.id;

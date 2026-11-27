@@ -220,6 +220,16 @@ class ApiService {
     }
   }
 
+  public async sendHeartbeat() {
+    try {
+      return await this.request<{ isOnline: boolean; onlineUserIds: string[] }>('/users/heartbeat', {
+        method: 'POST',
+      });
+    } catch {
+      return null;
+    }
+  }
+
   public async getUser(id: string) {
     return this.request<{ user: any }>(`/users/${id}`);
   }

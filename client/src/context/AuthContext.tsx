@@ -97,6 +97,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Heartbeat keepalive: device online means there is internet connectivity to the device
+  // Keeps device active on network even when user is not actively tapping the app
+  useEffect(() => {
+    if (!user) return;
+
+    const pingHeartbeat = () => {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        api.sendHeartbeat().then((res) => {
+          if (res?.onlineUserIds) {
+            setOnlineUserIds(res.onlineUserIds);
+          }
+        });
+      }
+    };
+
+    pingHeartbeat();
+    const timer = setInterval(pingHeartbeat, 25000);
+
+    const handleOnline = () => pingHeartbeat();
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [user]);
+
   const login = async (identifier: string, pass: string) => {
     const res = await api.login(identifier, pass);
     localStorage.setItem('aam_user_explicitly_authenticated', 'true');

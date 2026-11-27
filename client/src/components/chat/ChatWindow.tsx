@@ -26,12 +26,14 @@ import {
   Info,
   CheckCircle2,
   Search,
+  Download,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCall } from '../../context/CallContext';
 import { CryptoEngine } from '../../crypto/e2ee';
 import { Message, Conversation } from '../../types';
+import { mediaCache } from '../../services/mediaCache';
 
 interface ChatWindowProps {
   onBack?: () => void;
@@ -95,6 +97,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  // Auto-download all images and media to device storage upon arrival
+  useEffect(() => {
+    const urls = messages.filter((m) => m.mediaUrl).map((m) => m.mediaUrl!);
+    if (urls.length > 0) {
+      mediaCache.prefetchList(urls);
+    }
+  }, [messages]);
 
   // Load safety fingerprint
   useEffect(() => {
@@ -389,15 +399,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
 
                 {/* Media Image */}
                 {msg.contentType === 'image' && msg.mediaUrl && (
-                  <div
-                    onClick={() => handleInspectConnectedMedia(msg)}
-                    className="mb-2 rounded-xl overflow-hidden border border-black/20 cursor-pointer relative group/media"
-                    title="Tap to inspect Single-Instance Storage and connected chats"
-                  >
-                    <img src={msg.mediaUrl} alt="Shared Photo" className="w-full max-h-60 object-cover group-hover/media:scale-[1.02] transition" />
+                  <div className="mb-2 rounded-xl overflow-hidden border border-black/20 relative group/media">
+                    <img
+                      src={mediaCache.getLocalUrl(msg.mediaUrl)}
+                      alt="Shared Photo"
+                      className="w-full max-h-60 object-cover group-hover/media:scale-[1.02] transition cursor-pointer"
+                      onClick={() => handleInspectConnectedMedia(msg)}
+                    />
+                    <div className="absolute bottom-1.5 left-1.5 bg-black/75 backdrop-blur-sm px-2 py-0.5 rounded-full text-[9px] text-emerald-400 flex items-center space-x-1 shadow">
+                      <HardDrive className="w-2.5 h-2.5" />
+                      <span>Auto-Downloaded</span>
+                    </div>
                     <div className="absolute bottom-1.5 right-1.5 bg-black/75 backdrop-blur-sm px-2 py-0.5 rounded-full text-[9px] text-white flex items-center space-x-1 shadow">
-                      <HardDrive className="w-2.5 h-2.5 text-emerald-400" />
-                      <span>1 Device Copy</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          mediaCache.exportToDevice(msg.mediaUrl!, msg.mediaName || 'AAM_Photo.jpg');
+                        }}
+                        className="hover:text-amber-400 flex items-center space-x-1 transition"
+                        title="Save copy to Device Gallery"
+                      >
+                        <Download className="w-2.5 h-2.5" />
+                        <span>Save</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -405,17 +429,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onBack, onOpenTransfers 
                 {/* Media Video */}
                 {msg.contentType === 'video' && msg.mediaUrl && (
                   <div className="mb-2 rounded-xl overflow-hidden border border-black/20 relative">
-                    <video src={msg.mediaUrl} controls className="w-full max-h-60 rounded-xl" />
-                    <div
-                      onClick={() => handleInspectConnectedMedia(msg)}
-                      className="mt-1 flex items-center justify-between text-[10px] text-slate-300 bg-black/40 px-2 py-1 rounded cursor-pointer hover:bg-black/60 transition"
-                      title="Tap to inspect Single-Instance Storage"
-                    >
-                      <span className="flex items-center space-x-1">
-                        <HardDrive className="w-3 h-3 text-emerald-400" />
-                        <span>Single Instance: 1 Device Copy</span>
+                    <video
+                      src={mediaCache.getLocalUrl(msg.mediaUrl)}
+                      controls
+                      playsInline
+                      className="w-full max-h-60 rounded-xl"
+                    />
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-slate-300 bg-black/40 px-2 py-1 rounded">
+                      <span
+                        onClick={() => handleInspectConnectedMedia(msg)}
+                        className="flex items-center space-x-1 text-emerald-400 cursor-pointer hover:underline"
+                        title="Single Instance Sovereign Storage"
+                      >
+                        <HardDrive className="w-3 h-3" />
+                        <span>Auto-Downloaded • 1 Device Copy</span>
                       </span>
-                      <span className="text-amber-400 underline text-[9px]">Inspect Connected</span>
+                      <button
+                        onClick={() => mediaCache.exportToDevice(msg.mediaUrl!, msg.mediaName || 'AAM_Video.mp4')}
+                        className="text-amber-400 hover:text-amber-300 text-[9px] flex items-center space-x-1 transition"
+                        title="Save copy to Device Storage"
+                      >
+                        <Download className="w-2.5 h-2.5" />
+                        <span>Save</span>
+                      </button>
                     </div>
                   </div>
                 )}

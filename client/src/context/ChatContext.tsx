@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Conversation, Message, PendingTransfer } from '../types';
 import { api } from '../services/api';
 import { socket } from '../services/socket';
+import { mediaCache } from '../services/mediaCache';
 import { useAuth } from './AuthContext';
 
 interface ChatContextType {
@@ -66,6 +67,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.getMessages(convId);
       setMessages(res.messages);
 
+      // Auto-download all media to local device storage without manual click
+      const mediaUrls = res.messages.filter((m: Message) => m.mediaUrl).map((m: Message) => m.mediaUrl!);
+      if (mediaUrls.length > 0) {
+        mediaCache.prefetchList(mediaUrls);
+      }
+
       // Auto-acknowledge unread messages as read
       res.messages.forEach((m: Message) => {
         if (m.recipientId === user?.id && m.deliveryState !== 'read') {
@@ -126,6 +133,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubNewMsg = socket.on('message.new', (data: { message: Message }) => {
       const msg = data.message;
+      if (msg.mediaUrl) {
+        mediaCache.autoDownload(msg.mediaUrl);
+      }
       setMessages((prev) => {
         if (activeConversation && msg.conversationId === activeConversation.id) {
           if (!prev.some((m) => m.id === msg.id)) {

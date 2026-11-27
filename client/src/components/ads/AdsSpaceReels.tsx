@@ -18,6 +18,10 @@ import {
   ShoppingBag,
   ShieldCheck,
   X,
+  Download,
+  HardDrive,
+  Film,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useSocial } from '../../context/SocialContext';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +45,26 @@ export const AdsSpaceReels: React.FC<AdsSpaceReelsProps> = ({ onOpenChatWithUser
   const [copiedLink, setCopiedLink] = useState(false);
   const [expandedCaptions, setExpandedCaptions] = useState<Record<string, boolean>>({});
 
+  // User Data Privilege: In Ads Space, media is NOT auto-downloaded without user opt-in
+  const [optedAds, setOptedAds] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem('aam_opted_ads');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleOptInDownload = (adId: string) => {
+    setOptedAds((prev) => {
+      const updated = { ...prev, [adId]: true };
+      try {
+        localStorage.setItem('aam_opted_ads', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
@@ -56,12 +80,12 @@ export const AdsSpaceReels: React.FC<AdsSpaceReelsProps> = ({ onOpenChatWithUser
     }
   };
 
-  // Autoplay visible video, pause others
+  // Autoplay visible video only if user has opted to download & view media
   useEffect(() => {
     advertisements.forEach((ad, idx) => {
       const vid = videoRefs.current[ad.id];
       if (vid) {
-        if (idx === currentIndex) {
+        if (idx === currentIndex && optedAds[ad.id]) {
           vid.currentTime = 0;
           vid.play().then(() => {
             setIsPlaying((prev) => ({ ...prev, [ad.id]: true }));
@@ -75,7 +99,7 @@ export const AdsSpaceReels: React.FC<AdsSpaceReelsProps> = ({ onOpenChatWithUser
         }
       }
     });
-  }, [currentIndex, advertisements]);
+  }, [currentIndex, advertisements, optedAds]);
 
   const togglePlayPause = (adId: string) => {
     const vid = videoRefs.current[adId];
@@ -174,6 +198,10 @@ export const AdsSpaceReels: React.FC<AdsSpaceReelsProps> = ({ onOpenChatWithUser
               <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/40 font-bold backdrop-blur-md">
                 Contacts Feed
               </span>
+              <span className="hidden sm:flex text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold backdrop-blur-md items-center space-x-1">
+                <ShieldCheck className="w-2.5 h-2.5" />
+                <span>Opt-In Data Privilege</span>
+              </span>
             </div>
             <p className="text-[10px] text-slate-300/80 hidden sm:block">
               Full-screen vertical showcase from your trusted contact network
@@ -234,51 +262,102 @@ export const AdsSpaceReels: React.FC<AdsSpaceReelsProps> = ({ onOpenChatWithUser
                 key={ad.id}
                 className="h-full w-full snap-start relative flex items-center justify-center bg-black overflow-hidden"
               >
-                {/* Media Container */}
-                <div
-                  onDoubleClick={() => handleDoubleTap(ad)}
-                  onClick={() => ad.mediaType === 'video' && togglePlayPause(ad.id)}
-                  className="w-full h-full relative cursor-pointer flex items-center justify-center"
-                >
-                  {ad.mediaType === 'video' ? (
-                    <video
-                      ref={(el) => {
-                        videoRefs.current[ad.id] = el;
-                      }}
-                      src={ad.mediaUrl}
-                      playsInline
-                      loop
-                      muted={isMuted}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={ad.mediaUrl}
-                      alt={ad.headline}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  )}
+                {/* Media Container with User Privilege Opt-In for Ads */}
+                <div className="w-full h-full relative flex items-center justify-center">
+                  {!optedAds[ad.id] ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative bg-gradient-to-b from-slate-950 via-slate-900 to-black select-none">
+                      {/* Subtle Ambient Background */}
+                      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl pointer-events-none" />
 
-                  {/* Play/Pause Center Indicator */}
-                  {ad.mediaType === 'video' && !isPlaying[ad.id] && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
-                      <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white ring-1 ring-white/20">
-                        <Play className="w-8 h-8 fill-white translate-x-0.5" />
+                      <div className="relative z-10 max-w-xs sm:max-w-sm flex flex-col items-center space-y-3.5 p-5 sm:p-6 rounded-3xl bg-slate-900/95 border border-amber-500/30 shadow-2xl backdrop-blur-xl">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+                          {ad.mediaType === 'video' ? <Film className="w-7 h-7 sm:w-8 sm:h-8" /> : <ImageIcon className="w-7 h-7 sm:w-8 sm:h-8" />}
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-center space-x-1 text-[11px] text-amber-400 font-semibold uppercase tracking-wider">
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                            <span>User Data Privilege</span>
+                          </div>
+                          <h3 className="text-sm sm:text-base font-bold text-white line-clamp-2 px-1">
+                            {ad.headline}
+                          </h3>
+                          <p className="text-[11px] text-slate-300">
+                            By <span className="font-semibold text-white">{ad.userName}</span>
+                          </p>
+                        </div>
+
+                        <div className="px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-[10px] text-slate-300 flex items-center space-x-1.5">
+                          <HardDrive className="w-3 h-3 text-amber-400" />
+                          <span>Estimated: <strong>{ad.mediaType === 'video' ? '~2.5 MB Video' : '~400 KB Photo'}</strong></span>
+                        </div>
+
+                        <p className="text-[10px] sm:text-[11px] text-slate-400 leading-relaxed max-w-xs">
+                          In Ads Space, media is not auto-downloaded. You have the privilege to opt in and view when ready.
+                        </p>
+
+                        <button
+                          onClick={() => handleOptInDownload(ad.id)}
+                          className="w-full py-2.5 sm:py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/25 active:scale-95 transition"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download & View Media</span>
+                        </button>
                       </div>
                     </div>
-                  )}
+                  ) : (
+                    <div
+                      onDoubleClick={() => handleDoubleTap(ad)}
+                      onClick={() => ad.mediaType === 'video' && togglePlayPause(ad.id)}
+                      className="w-full h-full relative cursor-pointer flex items-center justify-center"
+                    >
+                      {ad.mediaType === 'video' ? (
+                        <video
+                          ref={(el) => {
+                            videoRefs.current[ad.id] = el;
+                          }}
+                          src={ad.mediaUrl}
+                          playsInline
+                          loop
+                          muted={isMuted}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={ad.mediaUrl}
+                          alt={ad.headline}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      )}
 
-                  {/* Double-tap Floating Heart Animation */}
-                  {showHeartAnim === ad.id && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-ping duration-700">
-                      <Heart className="w-24 h-24 text-rose-500 fill-rose-500 drop-shadow-2xl" />
+                      {/* Downloaded Opt-In Badge */}
+                      <div className="absolute top-16 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] text-emerald-400 flex items-center space-x-1 border border-emerald-500/30 z-20">
+                        <Check className="w-3 h-3" />
+                        <span>Downloaded (User Opt-in)</span>
+                      </div>
+
+                      {/* Play/Pause Center Indicator */}
+                      {ad.mediaType === 'video' && !isPlaying[ad.id] && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+                          <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white ring-1 ring-white/20">
+                            <Play className="w-8 h-8 fill-white translate-x-0.5" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Double-tap Floating Heart Animation */}
+                      {showHeartAnim === ad.id && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-ping duration-700">
+                          <Heart className="w-24 h-24 text-rose-500 fill-rose-500 drop-shadow-2xl" />
+                        </div>
+                      )}
+
+                      {/* Gradient Overlays for readable text */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
                     </div>
                   )}
-
-                  {/* Gradient Overlays for readable text */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-transparent pointer-events-none" />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent pointer-events-none" />
                 </div>
 
                 {/* Right Side Floating Actions Bar */}

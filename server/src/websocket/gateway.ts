@@ -17,6 +17,9 @@ export function getWebSocketGateway(): WebSocketGateway | null {
 export class WebSocketGateway {
   private wss: WebSocketServer;
   private clients: Map<string, Set<AuthenticatedSocket>> = new Map(); // userId -> Set of active sockets (multi-device)
+  private userConnectivityLeases: Map<string, number> = new Map(); // userId -> connectivity lease expiry timestamp
+  private disconnectTimers: Map<string, NodeJS.Timeout> = new Map(); // userId -> grace period timer
+  private static readonly CONNECTIVITY_LEASE_MS = 10 * 60 * 1000; // 10 minutes device internet connectivity window
 
   constructor(server: HttpServer) {
     gatewayInstance = this;
@@ -84,6 +87,13 @@ export class WebSocketGateway {
     }
     this.clients.get(userId)!.add(ws);
 
+    // Cancel any pending disconnect grace timer
+    if (this.disconnectTimers.has(userId)) {
+      clearTimeout(this.disconnectTimers.get(userId)!);
+      this.disconnectTimers.delete(userId);
+    }
+    this.userConnectivityLeases.set(userId, Date.now() + WebSocketGateway.CONNECTIVITY_LEASE_MS);
+
     // Broadcast presence update: user is now ONLINE
     this.broadcastPresence(userId, true);
 
@@ -93,7 +103,7 @@ export class WebSocketGateway {
         event: 'connected',
         data: {
           userId,
-          onlineUserIds: Array.from(this.clients.keys()),
+          onlineUserIds: this.getOnlineUserIds(),
         },
       })
     );
@@ -108,8 +118,23 @@ export class WebSocketGateway {
       userSockets.delete(ws);
       if (userSockets.size === 0) {
         this.clients.delete(userId);
-        // Broadcast presence update: user is now OFFLINE
-        this.broadcastPresence(userId, false);
+
+        // User online means there is internet connectivity to the user's device,
+        // even if the user minimizes or pauses the app!
+        // Start a 10-minute connectivity grace period before declaring the device offline.
+        if (this.disconnectTimers.has(userId)) {
+          clearTimeout(this.disconnectTimers.get(userId)!);
+        }
+        const timer = setTimeout(() => {
+          this.disconnectTimers.delete(userId);
+          const lease = this.userConnectivityLeases.get(userId) || 0;
+          if (lease <= Date.now() && (!this.clients.has(userId) || this.clients.get(userId)!.size === 0)) {
+            this.userConnectivityLeases.delete(userId);
+            this.broadcastPresence(userId, false);
+          }
+        }, WebSocketGateway.CONNECTIVITY_LEASE_MS);
+
+        this.disconnectTimers.set(userId, timer);
       }
     }
   }
@@ -406,17 +431,32 @@ export class WebSocketGateway {
     }
   }
 
+  public touchConnectivity(userId: string) {
+    this.userConnectivityLeases.set(userId, Date.now() + WebSocketGateway.CONNECTIVITY_LEASE_MS);
+    if (this.disconnectTimers.has(userId)) {
+      clearTimeout(this.disconnectTimers.get(userId)!);
+      this.disconnectTimers.delete(userId);
+    }
+    this.broadcastPresence(userId, true);
+  }
+
   public isUserOnline(userId: string): boolean {
-    return this.clients.has(userId) && (this.clients.get(userId)?.size || 0) > 0;
+    const sockets = this.clients.get(userId);
+    const hasActiveSocket = Boolean(sockets && sockets.size > 0);
+    const lease = this.userConnectivityLeases.get(userId) || 0;
+    const hasActiveLease = lease > Date.now();
+    return hasActiveSocket || hasActiveLease;
   }
 
   public getOnlineUserIds(): string[] {
-    const activeIds: string[] = [];
+    const now = Date.now();
+    const onlineSet = new Set<string>();
     this.clients.forEach((sockets, uid) => {
-      if (sockets && sockets.size > 0) {
-        activeIds.push(uid);
-      }
+      if (sockets && sockets.size > 0) onlineSet.add(uid);
     });
-    return activeIds;
+    this.userConnectivityLeases.forEach((expiresAt, uid) => {
+      if (expiresAt > now) onlineSet.add(uid);
+    });
+    return Array.from(onlineSet);
   }
 }
