@@ -157,15 +157,22 @@ export const ChatList: React.FC<ChatListProps> = ({
             <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
               <MessageSquare className="w-6 h-6 text-amber-400" />
             </div>
-            <div>
-              <p className="font-semibold text-slate-300">No conversations yet</p>
-              <p className="mt-1 text-slate-500 text-[11px]">Tap below to search team contacts or start a conversation!</p>
-            </div>
+            {searchQuery ? (
+              <div>
+                <p className="font-semibold text-slate-300">No active chats matching "{searchQuery}"</p>
+                <p className="mt-1 text-slate-500 text-[11px]">Search all registered contacts on AAM to start a chat or call!</p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-semibold text-slate-300">No conversations yet</p>
+                <p className="mt-1 text-slate-500 text-[11px]">Find registered contacts or start a conversation!</p>
+              </div>
+            )}
             <button
               onClick={onOpenNewChat}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold transition"
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-sm"
             >
-              + Search Contacts
+              🔍 Find Registered Contacts
             </button>
           </div>
         ) : (

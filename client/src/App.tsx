@@ -128,7 +128,9 @@ const MainApp: React.FC = () => {
               </div>
             )}
 
-            {currentTab === 'calls' && <CallHistoryTab />}
+            {currentTab === 'calls' && (
+              <CallHistoryTab onOpenContacts={() => setShowContactsModal(true)} />
+            )}
             {currentTab === 'status' && (
               <StatusTab
                 onOpenStatusViewer={(idx) => setActiveStoryGroupIndex(idx)}

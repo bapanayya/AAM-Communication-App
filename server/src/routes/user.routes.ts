@@ -6,30 +6,59 @@ import { BlockedUser } from '../types';
 
 export const userRouter = Router();
 
-// Search users by username, phone, email, or displayName
+// Search users by username, phone, email, or displayName (or return all registered users if empty)
 userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
   const currentUserId = req.user!.id;
   const q = ((req.query.q as string) || '').toLowerCase().trim();
+  const cleanDigits = q.replace(/\D/g, '');
 
   const blockedIds = db
     .getBlockedUsers()
     .filter((b) => b.blockerId === currentUserId || b.blockedUserId === currentUserId)
     .map((b) => (b.blockerId === currentUserId ? b.blockedUserId : b.blockerId));
 
-  // If query is empty, return discoverable users (e.g. for contact discovery and suggestions)
+  const contacts = db.getContacts().filter((c) => c.userId === currentUserId);
+  const friendRequests = db.getFriendRequests().filter(
+    (r) => (r.senderId === currentUserId || r.recipientId === currentUserId) && r.status === 'pending'
+  );
+
+  const enrichUser = (u: any) => {
+    const isFriend = contacts.some((c) => c.contactUserId === u.id);
+    const pendingReq = friendRequests.find(
+      (r) => (r.senderId === currentUserId && r.recipientId === u.id) ||
+             (r.recipientId === currentUserId && r.senderId === u.id)
+    );
+
+    let friendRequestStatus: 'incoming' | 'outgoing' | 'none' = 'none';
+    let friendRequestId: string | undefined;
+
+    if (pendingReq) {
+      friendRequestStatus = pendingReq.senderId === currentUserId ? 'outgoing' : 'incoming';
+      friendRequestId = pendingReq.id;
+    }
+
+    return {
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName,
+      phoneNumber: u.phoneNumber,
+      email: u.email,
+      avatar: u.avatar,
+      bio: u.bio,
+      storageMode: u.storageMode,
+      isFriend,
+      friendRequestStatus,
+      friendRequestId,
+      createdAt: u.createdAt,
+    };
+  };
+
+  // If query is empty, return all registered discoverable users
   if (!q) {
     const discoverable = db
       .getUsers()
       .filter((u) => u.id !== currentUserId && !blockedIds.includes(u.id))
-      .slice(0, 20)
-      .map((u) => ({
-        id: u.id,
-        username: u.username,
-        displayName: u.displayName,
-        avatar: u.avatar,
-        bio: u.bio,
-        storageMode: u.storageMode,
-      }));
+      .map(enrichUser);
     res.json({ users: discoverable });
     return;
   }
@@ -37,21 +66,15 @@ userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
   const results = db
     .getUsers()
     .filter((u) => u.id !== currentUserId && !blockedIds.includes(u.id))
-    .filter(
-      (u) =>
-        u.username.toLowerCase().includes(q) ||
-        u.displayName.toLowerCase().includes(q) ||
-        (u.phoneNumber && u.phoneNumber.includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q))
-    )
-    .map((u) => ({
-      id: u.id,
-      username: u.username,
-      displayName: u.displayName,
-      avatar: u.avatar,
-      bio: u.bio,
-      storageMode: u.storageMode,
-    }));
+    .filter((u) => {
+      const matchUsername = u.username.toLowerCase().includes(q);
+      const matchDisplayName = u.displayName.toLowerCase().includes(q);
+      const matchEmail = !!(u.email && u.email.toLowerCase().includes(q));
+      const matchPhoneRaw = !!(u.phoneNumber && u.phoneNumber.includes(q));
+      const matchPhoneDigits = cleanDigits.length >= 3 && !!(u.phoneNumber && u.phoneNumber.replace(/\D/g, '').includes(cleanDigits));
+      return matchUsername || matchDisplayName || matchEmail || matchPhoneRaw || matchPhoneDigits;
+    })
+    .map(enrichUser);
 
   res.json({ users: results });
 });

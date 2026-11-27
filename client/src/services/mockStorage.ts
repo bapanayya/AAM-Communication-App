@@ -180,20 +180,22 @@ export class MockStorageService {
   public handleMockRequest(endpoint: string, options: RequestInit = {}): any {
     const method = (options.method || 'GET').toUpperCase();
     const body = options.body ? JSON.parse(options.body as string) : {};
+    const [cleanPath, queryString] = endpoint.split('?');
+    const urlParams = new URLSearchParams(queryString || '');
 
     // 1. Auth & Profiles
-    if (endpoint === '/auth/demo-login') {
+    if (cleanPath === '/auth/demo-login') {
       const targetUserId = body.userId || 'usr_aarav';
       this.setCurrentUser(targetUserId);
       const user = this.getCurrentUser();
       return { token: `mock_jwt_${user.id}`, user };
     }
 
-    if (endpoint === '/auth/me') {
+    if (cleanPath === '/auth/me') {
       return { user: this.getCurrentUser() };
     }
 
-    if (endpoint === '/auth/login') {
+    if (cleanPath === '/auth/login') {
       const user = this.users.find(
         (u) => u.username === body.identifier || u.email === body.identifier || u.phoneNumber === body.identifier
       ) || this.users[0];
@@ -201,7 +203,7 @@ export class MockStorageService {
       return { token: `mock_jwt_${user.id}`, user };
     }
 
-    if (endpoint === '/auth/register') {
+    if (cleanPath === '/auth/register') {
       const newUser: User = {
         id: 'usr_' + Date.now(),
         username: body.username || 'user_' + Date.now(),
@@ -219,15 +221,49 @@ export class MockStorageService {
       return { token: `mock_jwt_${newUser.id}`, user: newUser };
     }
 
-    if (endpoint === '/auth/send-otp') {
+    if (cleanPath === '/auth/send-otp') {
       return { success: true, message: 'OTP sent successfully (Demo: 123456)', demoCode: '123456' };
     }
 
-    if (endpoint === '/users/search') {
-      return { users: this.users.filter((u) => u.id !== this.currentUserId) };
+    if (cleanPath === '/users/search') {
+      const q = (urlParams.get('q') || '').toLowerCase().trim();
+      const cleanDigits = q.replace(/\D/g, '');
+      const acceptedIds = this.contacts
+        .filter((c) => c.userId === this.currentUserId)
+        .map((c) => c.contactUserId);
+      const pendingReqs = this.friendRequests.filter(
+        (fr) => (fr.senderId === this.currentUserId || fr.recipientId === this.currentUserId) && fr.status === 'pending'
+      );
+
+      const matchedUsers = this.users
+        .filter((u) => u.id !== this.currentUserId)
+        .filter((u) => {
+          if (!q) return true;
+          const matchU = u.username.toLowerCase().includes(q);
+          const matchD = u.displayName.toLowerCase().includes(q);
+          const matchE = u.email ? u.email.toLowerCase().includes(q) : false;
+          const matchP = u.phoneNumber ? u.phoneNumber.includes(q) : false;
+          const matchPD = cleanDigits.length >= 3 && u.phoneNumber ? u.phoneNumber.replace(/\D/g, '').includes(cleanDigits) : false;
+          return matchU || matchD || matchE || matchP || matchPD;
+        })
+        .map((u) => {
+          const isFriend = acceptedIds.includes(u.id);
+          const pr = pendingReqs.find((r) => r.senderId === u.id || r.recipientId === u.id);
+          let friendRequestStatus: 'incoming' | 'outgoing' | 'none' = 'none';
+          if (pr) {
+            friendRequestStatus = pr.senderId === this.currentUserId ? 'outgoing' : 'incoming';
+          }
+          return {
+            ...u,
+            isFriend,
+            friendRequestStatus,
+            friendRequestId: pr?.id,
+          };
+        });
+      return { users: matchedUsers };
     }
 
-    if (endpoint === '/users/profile' && method === 'PATCH') {
+    if (cleanPath === '/users/profile' && method === 'PATCH') {
       const user = this.getCurrentUser();
       if (user) {
         if (body.displayName) user.displayName = body.displayName.trim();
@@ -239,14 +275,14 @@ export class MockStorageService {
       return { user };
     }
 
-    if (endpoint === '/users/storage-mode' && method === 'PATCH') {
+    if (cleanPath === '/users/storage-mode' && method === 'PATCH') {
       const user = this.getCurrentUser();
       user.storageMode = body.storageMode;
       this.save();
       return { user };
     }
 
-    if (endpoint === '/users/settings/me') {
+    if (cleanPath === '/users/settings/me') {
       return {
         settings: {
           userId: this.currentUserId,
@@ -255,13 +291,13 @@ export class MockStorageService {
           allowReadReceipts: true,
           autoDownloadMedia: true,
           videoQuality: 'high',
-          specialAlertContacts: ['usr_priya'],
+          specialAlertContacts: [],
         },
       };
     }
 
     // 2. Contacts & Friend Requests
-    if (endpoint === '/contacts') {
+    if (cleanPath === '/contacts') {
       const acceptedIds = this.contacts
         .filter((c) => c.userId === this.currentUserId)
         .map((c) => c.contactUserId);
@@ -269,13 +305,13 @@ export class MockStorageService {
       return { contacts };
     }
 
-    if (endpoint === '/contacts/requests') {
+    if (cleanPath === '/contacts/requests') {
       const incoming = this.friendRequests.filter((fr) => fr.recipientId === this.currentUserId && fr.status === 'pending');
       const outgoing = this.friendRequests.filter((fr) => fr.senderId === this.currentUserId && fr.status === 'pending');
       return { incoming, outgoing };
     }
 
-    if (endpoint === '/contacts/request' && method === 'POST') {
+    if ((cleanPath === '/contacts/requests' || cleanPath === '/contacts/request') && method === 'POST') {
       const fr = {
         id: 'fr_' + Date.now(),
         senderId: this.currentUserId,
@@ -289,8 +325,8 @@ export class MockStorageService {
       return { request: fr, friendRequest: fr };
     }
 
-    if (endpoint.startsWith('/contacts/request/') && endpoint.endsWith('/accept')) {
-      const frId = endpoint.split('/')[3];
+    if ((cleanPath.startsWith('/contacts/requests/') || cleanPath.startsWith('/contacts/request/')) && cleanPath.endsWith('/accept')) {
+      const frId = cleanPath.split('/')[3];
       const fr = this.friendRequests.find((r) => r.id === frId);
       if (fr) {
         fr.status = 'accepted';
@@ -303,8 +339,8 @@ export class MockStorageService {
       return { success: true };
     }
 
-    if (endpoint.startsWith('/contacts/request/') && endpoint.endsWith('/reject')) {
-      const frId = endpoint.split('/')[3];
+    if ((cleanPath.startsWith('/contacts/requests/') || cleanPath.startsWith('/contacts/request/')) && cleanPath.endsWith('/reject')) {
+      const frId = cleanPath.split('/')[3];
       const fr = this.friendRequests.find((r) => r.id === frId);
       if (fr) {
         fr.status = 'rejected';

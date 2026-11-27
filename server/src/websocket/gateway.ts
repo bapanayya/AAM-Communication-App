@@ -9,11 +9,17 @@ interface AuthenticatedSocket extends WebSocket {
   isAlive?: boolean;
 }
 
+let gatewayInstance: WebSocketGateway | null = null;
+export function getWebSocketGateway(): WebSocketGateway | null {
+  return gatewayInstance;
+}
+
 export class WebSocketGateway {
   private wss: WebSocketServer;
   private clients: Map<string, Set<AuthenticatedSocket>> = new Map(); // userId -> Set of active sockets (multi-device)
 
   constructor(server: HttpServer) {
+    gatewayInstance = this;
     this.wss = new WebSocketServer({ server, path: '/ws' });
     this.init();
   }

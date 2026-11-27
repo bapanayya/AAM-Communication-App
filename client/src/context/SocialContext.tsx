@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { DailyFeedItem, StatusGroup, FriendRequest, UserBackup, Advertisement } from '../types';
 import { api } from '../services/api';
+import { socket } from '../services/socket';
 import { useAuth } from './AuthContext';
 
 interface SocialContextType {
@@ -16,6 +17,7 @@ interface SocialContextType {
   sendFriendRequest: (recipientId: string) => Promise<void>;
   acceptFriendRequest: (requestId: string) => Promise<void>;
   rejectFriendRequest: (requestId: string) => Promise<void>;
+  cancelFriendRequest: (requestId: string) => Promise<void>;
   loadDailyFeed: () => Promise<void>;
   likeFeedItem: (id: string) => Promise<void>;
   reactFeedItem: (id: string, emoji: string) => Promise<void>;
@@ -128,6 +130,20 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       loadStatusUpdates();
       loadStorageSummary();
       loadAdvertisements();
+
+      // Real-time contact updates
+      const unsubReq = socket.on('contact.request_received', () => {
+        loadFriendRequests();
+      });
+      const unsubAccepted = socket.on('contact.request_accepted', () => {
+        loadFriendRequests();
+        loadContacts();
+      });
+
+      return () => {
+        unsubReq();
+        unsubAccepted();
+      };
     }
   }, [user, loadContacts, loadFriendRequests, loadDailyFeed, loadStatusUpdates, loadStorageSummary, loadAdvertisements]);
 
@@ -144,6 +160,11 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const rejectFriendRequest = async (requestId: string) => {
     await api.rejectFriendRequest(requestId);
+    await loadFriendRequests();
+  };
+
+  const cancelFriendRequest = async (requestId: string) => {
+    await api.cancelFriendRequest(requestId);
     await loadFriendRequests();
   };
 
@@ -251,6 +272,7 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         sendFriendRequest,
         acceptFriendRequest,
         rejectFriendRequest,
+        cancelFriendRequest,
         loadDailyFeed,
         likeFeedItem,
         reactFeedItem,

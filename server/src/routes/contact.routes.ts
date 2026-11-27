@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/storage';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { Contact, FriendRequest } from '../types';
+import { getWebSocketGateway } from '../websocket/gateway';
 
 export const contactRouter = Router();
 
@@ -87,6 +88,23 @@ contactRouter.post('/requests', authMiddleware, (req: AuthRequest, res: Response
   db.getFriendRequests().push(newRequest);
   db.save();
 
+  const gw = getWebSocketGateway();
+  if (gw) {
+    gw.sendToUser(recipientId, JSON.stringify({
+      event: 'contact.request_received',
+      data: {
+        requestId: newRequest.id,
+        sender: {
+          id: req.user!.id,
+          username: req.user!.username,
+          displayName: req.user!.displayName,
+          avatar: req.user!.avatar,
+          phoneNumber: req.user!.phoneNumber,
+        },
+      },
+    }));
+  }
+
   res.status(201).json({ request: newRequest });
 });
 
@@ -162,6 +180,25 @@ contactRouter.post('/requests/:id/accept', authMiddleware, (req: AuthRequest, re
   }
 
   db.save();
+
+  const gw = getWebSocketGateway();
+  if (gw) {
+    gw.sendToUser(request.senderId, JSON.stringify({
+      event: 'contact.request_accepted',
+      data: {
+        requestId: request.id,
+        conversationId: conversation.id,
+        friend: {
+          id: req.user!.id,
+          username: req.user!.username,
+          displayName: req.user!.displayName,
+          avatar: req.user!.avatar,
+          phoneNumber: req.user!.phoneNumber,
+        },
+      },
+    }));
+  }
+
   res.json({ success: true, message: 'Friend request accepted', conversationId: conversation.id });
 });
 
