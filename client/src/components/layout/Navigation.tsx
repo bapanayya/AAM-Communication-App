@@ -23,10 +23,10 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, setCurrentTa
 
   const tabs: { id: NavTab; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     { id: 'chats', label: 'Chats', icon: MessageSquare, badge: totalUnread },
+    { id: 'status', label: 'Status', icon: CircleDashed },
     { id: 'calls', label: 'Calls', icon: Phone, badge: missedCalls },
     { id: 'feed', label: 'Daily Feed', icon: Film },
     { id: 'ads', label: 'Ads Space', icon: Megaphone },
-    { id: 'status', label: 'Status', icon: CircleDashed },
     { id: 'transfers', label: 'Transfers', icon: Clock, badge: pendingCount },
     { id: 'contacts', label: 'Contacts', icon: Users, badge: incomingReqCount },
     { id: 'storage', label: 'Storage', icon: HardDrive },

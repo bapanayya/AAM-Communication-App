@@ -1,6 +1,26 @@
 import { mockStorage } from './mockStorage';
 
-const API_BASE = 'http://localhost:5000/api';
+export const CLOUD_API_BASE = 'https://instantly-resolved-driven-happens.trycloudflare.com/api';
+export const DIRECT_IP_API_BASE = 'http://92.4.67.156:5000/api';
+export const LOCAL_API_BASE = 'http://localhost:5000/api';
+
+export function getApiBase(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('aam_custom_api_url');
+    if (custom) return custom;
+
+    const hostname = window.location.hostname;
+    // If local dev on PC
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      if (window.location.port === '5000') {
+        return `http://${hostname}:5000/api`;
+      }
+      return LOCAL_API_BASE;
+    }
+  }
+  // Android APK, mobile browser, or GitHub Pages
+  return CLOUD_API_BASE;
+}
 
 class ApiService {
   private token: string | null = null;
@@ -32,28 +52,45 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const isLocalhost =
-      typeof window !== 'undefined' &&
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-    // On GitHub Pages, mobile browsers, or standalone PWA/Android, directly use the sovereign local client engine
-    if (!isLocalhost) {
-      return mockStorage.handleMockRequest(endpoint, options) as T;
-    }
+    const apiBase = getApiBase();
 
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 9000);
+      const res = await fetch(`${apiBase}${endpoint}`, {
         ...options,
         headers,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'API request failed');
       }
       return data;
-    } catch (err) {
-      console.warn(`Remote backend unavailable at ${API_BASE}. Falling back to sovereign local store for ${endpoint}`);
+    } catch (err: any) {
+      // If primary endpoint failed, attempt fallback direct IP before local store
+      if (apiBase !== DIRECT_IP_API_BASE && apiBase !== LOCAL_API_BASE) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const res = await fetch(`${DIRECT_IP_API_BASE}${endpoint}`, {
+            ...options,
+            headers,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          const data = await res.json();
+          if (res.ok) {
+            return data;
+          }
+        } catch (fallbackErr) {
+          // Continue to mockStorage
+        }
+      }
+
+      console.warn(`Remote backend unavailable at ${apiBase}. Falling back to sovereign local store for ${endpoint}:`, err?.message || err);
       return mockStorage.handleMockRequest(endpoint, options) as T;
     }
   }

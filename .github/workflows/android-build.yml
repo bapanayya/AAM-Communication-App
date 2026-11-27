@@ -67,13 +67,13 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AUM-Debug-APK
+          name: AAM-Live-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload Play Store AAB Bundle Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AUM-PlayStore-AAB
+          name: AAM-PlayStore-AAB
           path: android/app/build/outputs/bundle/release/*.aab
 
       - name: Prepare Named Release Assets
@@ -91,8 +91,9 @@ jobs:
           echo "Selected AAB: $AAB_PATH" >> $GITHUB_STEP_SUMMARY
 
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
+            cp "$APK_PATH" AAM.apk
             cp "$APK_PATH" AUM.apk
-            echo "Copied APK to AUM.apk ($(ls -lh AUM.apk | awk '{print $5}'))" >> $GITHUB_STEP_SUMMARY
+            echo "Copied APK to AAM.apk and AUM.apk ($(ls -lh AAM.apk | awk '{print $5}'))" >> $GITHUB_STEP_SUMMARY
           else
             echo "ERROR: APK not found" >> $GITHUB_STEP_SUMMARY
             exit 1
@@ -102,8 +103,9 @@ jobs:
             echo "Signing Release AAB with production upload keystore..."
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android/app/upload-keystore.jks -storepass aum123 -keypass aum123 "$AAB_PATH" aum
             jarsigner -verify "$AAB_PATH"
+            cp "$AAB_PATH" AAM.aab
             cp "$AAB_PATH" AUM.aab
-            echo "Copied signed AAB to AUM.aab ($(ls -lh AUM.aab | awk '{print $5}'))" >> $GITHUB_STEP_SUMMARY
+            echo "Copied signed AAB to AAM.aab and AUM.aab ($(ls -lh AAM.aab | awk '{print $5}'))" >> $GITHUB_STEP_SUMMARY
           else
             echo "ERROR: AAB not found in android/app/build/outputs/bundle/release" >> $GITHUB_STEP_SUMMARY
             exit 1
@@ -113,29 +115,28 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: v1.0.0
-          name: "AUM Sovereign Android App v1.0.0 (Official Release)"
+          tag_name: v1.1.0
+          name: "AAM Sovereign Android App v1.1.0 (Live Multi-User Release)"
           fail_on_unmatched_files: true
           body: |
-            ### 🕉️ AUM: Sovereign Privacy-First Messaging & Social Media (v1.0.0)
+            ### 🕉️ AAM: Sovereign Privacy-First Messaging, Video Calling & Social Platform (v1.1.0)
             *Proudly Make in India 🇮🇳 | Target SDK 36 Compliant (Android 14/15/16)*
 
-            #### 🌟 Highlights & Capabilities:
-            - **3 User-Selectable Storage Modes**:
-              1. *Local Device Storage (Default & Free)*: Content stored solely on your device. Zero server retention.
-              2. *Local Storage + Encrypted Cloud Backup*: Client-encrypted backup snapshots for phone loss recovery.
-              3. *Paid Encrypted Cloud Storage*: Real-time cloud sync across authorised devices.
-            - **My Pending Transfers**: Undelivered messages & media are held safely on the sender's device when the recipient is offline and delivered peer-to-peer upon reconnect.
-            - **Encrypted WebRTC Audio & Video Calling**: Peer-to-peer live calls with zero call recording on servers.
-            - **Daily Moments Feed (Reels)**: Chronological stream of received media that auto-archives at midnight.
-            - **24-Hour Status (Stories)**: Ephemeral photo and gradient text stories with granular contact privacy.
-            - **Out-of-Band Safety Numbers**: 12-digit visual cryptographic fingerprints (AES-GCM 256 / SHA-256).
+            #### 🌟 Highlights & New Capabilities:
+            - **Live Real-Time Multi-User Connectivity**: Real users can register their own accounts and interact live across separate mobile phones and browsers.
+            - **Initial Sign In & Sign Up Screen**: Complete user onboarding with phone (+91), email, username, and password, plus 1-click demo profiles.
+            - **Dedicated 24h Status Tab**: Ephemeral photo and gradient text stories with contact updates right next to Chats (Tab 2).
+            - **Single-Instance Storage (CAS Deduplication)**: Content-addressable storage saving device storage when forwarding media to multiple contacts.
+            - **3 User-Selectable Storage Modes**: Local Device (free), Local + Encrypted Cloud Backup, and Real-Time Cloud Sync.
+            - **Encrypted WebRTC Audio & Video Calling**: Ultra-low battery consumption, mono speech optimization (Opus 48kHz), and zero call recording.
 
             #### 📦 Downloads:
-            - **`AUM.apk`**: Direct installation file for any Android phone (Android 7.0+ / SDK 24–36).
-            - **`AUM.aab`**: Official Google Play Store Android App Bundle (signed with production upload keystore).
+            - **`AAM.apk`**: Direct installation file for any Android phone (Android 7.0+ / SDK 24–36).
+            - **`AAM.aab`**: Official Google Play Store Android App Bundle (signed with production upload keystore).
           files: |
+            AAM.apk
             AUM.apk
+            AAM.aab
             AUM.aab
           draft: false
           prerelease: false

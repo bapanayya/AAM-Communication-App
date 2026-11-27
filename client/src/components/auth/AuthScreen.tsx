@@ -25,8 +25,8 @@ export const AuthScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Sign In state
-  const [signInIdentifier, setSignInIdentifier] = useState('aarav_sharma');
-  const [signInPassword, setSignInPassword] = useState('Password@123');
+  const [signInIdentifier, setSignInIdentifier] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
   const [showSignInPassword, setShowSignInPassword] = useState(false);
 
   // Sign Up state

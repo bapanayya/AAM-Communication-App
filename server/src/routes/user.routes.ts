@@ -11,15 +11,28 @@ userRouter.get('/search', authMiddleware, (req: AuthRequest, res: Response) => {
   const currentUserId = req.user!.id;
   const q = ((req.query.q as string) || '').toLowerCase().trim();
 
-  if (!q) {
-    res.json({ users: [] });
-    return;
-  }
-
   const blockedIds = db
     .getBlockedUsers()
     .filter((b) => b.blockerId === currentUserId || b.blockedUserId === currentUserId)
     .map((b) => (b.blockerId === currentUserId ? b.blockedUserId : b.blockerId));
+
+  // If query is empty, return discoverable users (e.g. for contact discovery and suggestions)
+  if (!q) {
+    const discoverable = db
+      .getUsers()
+      .filter((u) => u.id !== currentUserId && !blockedIds.includes(u.id))
+      .slice(0, 20)
+      .map((u) => ({
+        id: u.id,
+        username: u.username,
+        displayName: u.displayName,
+        avatar: u.avatar,
+        bio: u.bio,
+        storageMode: u.storageMode,
+      }));
+    res.json({ users: discoverable });
+    return;
+  }
 
   const results = db
     .getUsers()

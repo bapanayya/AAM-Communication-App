@@ -28,6 +28,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       const storedToken = api.getToken();
       if (storedToken) {
+        // Clear legacy mock tokens so user sees the Initial Sign Up / Sign In page
+        if (storedToken.startsWith('mock_jwt_') && !localStorage.getItem('aam_user_explicitly_authenticated')) {
+          console.log('Clearing legacy mock token to show Initial Sign In / Sign Up page');
+          api.setToken(null);
+          setToken(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         try {
           const res = await api.getMe();
           setUser(res.user);
@@ -36,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Failed to restore session:', err);
           api.setToken(null);
           setToken(null);
+          setUser(null);
         }
       } else {
         // No stored token: show Initial Sign Up / Sign In Page
@@ -71,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (identifier: string, pass: string) => {
     const res = await api.login(identifier, pass);
+    localStorage.setItem('aam_user_explicitly_authenticated', 'true');
     api.setToken(res.token);
     setToken(res.token);
     setUser(res.user);
@@ -79,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (data: any) => {
     const res = await api.register(data);
+    localStorage.setItem('aam_user_explicitly_authenticated', 'true');
     api.setToken(res.token);
     setToken(res.token);
     setUser(res.user);
@@ -89,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     socket.disconnect();
     const res = await api.demoLogin(userId);
+    localStorage.setItem('aam_user_explicitly_authenticated', 'true');
     api.setToken(res.token);
     setToken(res.token);
     setUser(res.user);
@@ -110,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     socket.disconnect();
+    localStorage.removeItem('aam_user_explicitly_authenticated');
     api.setToken(null);
     setToken(null);
     setUser(null);

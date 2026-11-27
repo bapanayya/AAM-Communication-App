@@ -1,11 +1,26 @@
 type EventCallback = (data: any) => void;
 
+export function getSocketUrl(token: string): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('aam_custom_ws_url');
+    if (custom) return `${custom}?token=${encodeURIComponent(token)}`;
+
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `ws://localhost:5000/ws?token=${encodeURIComponent(token)}`;
+    }
+  }
+  // Cloud Live WSS (with TLS) via Oracle Cloud VM tunnel
+  return `wss://instantly-resolved-driven-happens.trycloudflare.com/ws?token=${encodeURIComponent(token)}`;
+}
+
 class SocketService {
   private ws: WebSocket | null = null;
   private token: string | null = null;
   private listeners: Map<string, Set<EventCallback>> = new Map();
   private reconnectTimer: any = null;
   private isExplicitDisconnect = false;
+  private fallbackAttempted = false;
 
   public connect(token: string) {
     this.token = token;
@@ -15,28 +30,17 @@ class SocketService {
       return;
     }
 
-    const isLocalhost =
-      typeof window !== 'undefined' &&
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-    if (!isLocalhost) {
-      // Simulate sovereign local P2P presence on GitHub Pages / Mobile
-      setTimeout(() => {
-        this.emitLocal('connected', {
-          userId: 'usr_aarav',
-          onlineUserIds: ['usr_aarav', 'usr_priya', 'usr_vikram'],
-        });
-        this.emitLocal('connection_status', { isConnected: true });
-      }, 100);
-      return;
-    }
+    const wsUrl = this.fallbackAttempted
+      ? `ws://92.4.67.156:5000/ws?token=${encodeURIComponent(token)}`
+      : getSocketUrl(token);
 
     try {
-      this.ws = new WebSocket(`ws://localhost:5000/ws?token=${encodeURIComponent(token)}`);
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('⚡ AUM Real-time WebSocket connected');
+        console.log(`⚡ AAM Real-time WebSocket connected to ${wsUrl}`);
         this.emitLocal('connection_status', { isConnected: true });
+        this.fallbackAttempted = false;
       };
 
       this.ws.onmessage = (event) => {
@@ -53,7 +57,9 @@ class SocketService {
       this.ws.onclose = () => {
         this.emitLocal('connection_status', { isConnected: false });
         if (!this.isExplicitDisconnect) {
-          // Reconnect with exponential backoff
+          if (!this.fallbackAttempted) {
+            this.fallbackAttempted = true;
+          }
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = setTimeout(() => {
             if (this.token && !this.isExplicitDisconnect) {
@@ -64,10 +70,16 @@ class SocketService {
       };
 
       this.ws.onerror = (err) => {
-        console.warn('WS error:', err);
+        console.warn('WS error on', wsUrl, err);
       };
     } catch (err) {
       console.error('Failed to initialize WebSocket:', err);
+      // Fallback local simulated presence if network is completely down
+      this.emitLocal('connected', {
+        userId: 'usr_aarav',
+        onlineUserIds: ['usr_aarav', 'usr_priya', 'usr_vikram'],
+      });
+      this.emitLocal('connection_status', { isConnected: true });
     }
   }
 
