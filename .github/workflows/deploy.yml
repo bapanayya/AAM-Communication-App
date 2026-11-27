@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -37,17 +37,31 @@ jobs:
           cd ..
 
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v4
+        continue-on-error: true
+        with:
+          enablement: true
 
       - name: Prepare Static Site Artifact
         run: |
           mkdir -p site/downloads
           cp -r client/dist/* site/
-          cp privacy-policy.html site/
+          cp privacy-policy.html site/ 2>/dev/null || true
+          cp features-and-technology.html site/ 2>/dev/null || true
+          cp AAM_Application_Architecture_and_Flow.pdf site/ 2>/dev/null || true
           cp -r assets site/ 2>/dev/null || true
           touch site/.nojekyll
           # Fetch latest release APK if available
           curl -L -f -s -o site/downloads/AUM.apk https://github.com/bapanayya/AUM-Messaging-App/releases/latest/download/AUM.apk || true
+
+      - name: Deploy to gh-pages branch (Dual-Mode Fallback)
+        uses: peaceiris/actions-gh-pages@v4
+        continue-on-error: true
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          force_orphan: true
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
